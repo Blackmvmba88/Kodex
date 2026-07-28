@@ -9,7 +9,13 @@ from agent.repo_scanner import scan_repo
 
 
 def build_snapshot(path: str | Path = ".") -> dict[str, Any]:
-    """Build a compact readiness snapshot for a repository."""
+    """Build a compact readiness snapshot for a repository.
+
+    Readiness means the repo is safe to start work from: it is a git repo,
+    the working tree is clean, the diff guard is safe, and at least one check
+    command is known. Project risks are reported as warnings, but do not block
+    readiness by themselves.
+    """
     root = Path(path).expanduser().resolve()
     project = scan_repo(root)
     git = git_status(root)
@@ -25,7 +31,6 @@ def build_snapshot(path: str | Path = ".") -> dict[str, Any]:
         bool(git.get("is_git_repo"))
         and not dirty
         and diff_safe
-        and not risks
         and checks_available
     )
 
