@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Kodex",
+    "repository": "Blackmvmba88/Kodex",
+    "purpose": "Core BlackMamba personal programming agent",
+    "stack": ["python"],
+    "entrypoints": ["agent/main.py"],
+    "commands": {
+      "install": "pip install -e .",
+      "doctor": "kodex doctor .",
+      "scan": "kodex scan ."
+    },
+    "risks": [
+      "no tests detected yet",
+      "no CI workflow detected yet"
+    ],
+    "next_tasks": [
+      "add smoke tests for scanner and planner",
+      "add GitHub Actions CI",
+      "add README quickstart",
+      "add local OpenAI/Codex execution adapter"
+    ]
+  }
+]
