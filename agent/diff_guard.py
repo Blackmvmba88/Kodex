@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from agent.git_ops import _run_git
+from agent.git_ops import is_git_repo, run_git
 
 SENSITIVE_PATTERNS = [
     ".env",
@@ -23,13 +23,25 @@ DESTRUCTIVE_HINTS = [
 
 def get_diff(path: str | Path = ".") -> dict[str, Any]:
     root = Path(path).expanduser().resolve()
-    diff = _run_git(["diff", "--stat"], root)
-    patch = _run_git(["diff", "--name-status"], root)
+
+    if not is_git_repo(root):
+        return {
+            "path": str(root),
+            "stat": "",
+            "name_status": "",
+            "ok": False,
+            "error": "not a git repository",
+        }
+
+    diff = run_git(root, ["diff", "--stat"])
+    patch = run_git(root, ["diff", "--name-status"])
+
     return {
         "path": str(root),
-        "stat": diff.get("stdout", ""),
-        "name_status": patch.get("stdout", ""),
-        "ok": diff.get("ok", False) and patch.get("ok", False),
+        "stat": diff.stdout,
+        "name_status": patch.stdout,
+        "ok": diff.returncode == 0 and patch.returncode == 0,
+        "error": (diff.stderr or patch.stderr).strip() or None,
     }
 
 
@@ -46,6 +58,6 @@ def inspect_diff(path: str | Path = ".") -> dict[str, Any]:
         if hint in text:
             warnings.append(f"destructive diff hint detected: {hint.strip()}")
 
-    diff["safe"] = not warnings
+    diff["safe"] = diff.get("ok", False) and not warnings
     diff["warnings"] = warnings
     return diff
