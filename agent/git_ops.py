@@ -16,6 +16,11 @@ def run_git(repo_path: str | Path, args: list[str]) -> subprocess.CompletedProce
     )
 
 
+# Backward-compatible internal alias used by diff_guard.
+def _run_git(repo_path: str | Path, args: list[str]) -> subprocess.CompletedProcess[str]:
+    return run_git(repo_path, args)
+
+
 def is_git_repo(repo_path: str | Path) -> bool:
     result = run_git(repo_path, ["rev-parse", "--is-inside-work-tree"])
     return result.returncode == 0 and result.stdout.strip() == "true"
