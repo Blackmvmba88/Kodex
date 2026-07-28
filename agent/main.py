@@ -8,6 +8,9 @@ from rich.console import Console
 from rich.json import JSON
 from rich.table import Table
 
+from agent.checks import run_project_checks
+from agent.diff_guard import inspect_diff
+from agent.executor import execute_task
 from agent.git_ops import git_status
 from agent.memory import find_project, load_projects, save_project
 from agent.repo_scanner import scan_repo
@@ -73,6 +76,30 @@ def doctor(path: str = typer.Argument(".", help="Repository path")) -> None:
     project = scan_repo(path)
     state = git_status(path)
     console.print(JSON.from_data({"project": project, "git": state}))
+
+
+@app.command()
+def checks(path: str = typer.Argument(".", help="Repository path"), timeout: int = 120) -> None:
+    """Run detected project checks."""
+    project = scan_repo(path)
+    console.print(JSON.from_data(run_project_checks(project, timeout=timeout)))
+
+
+@app.command("diff")
+def diff_guard(path: str = typer.Argument(".", help="Repository path")) -> None:
+    """Inspect current diff for risky changes."""
+    console.print(JSON.from_data(inspect_diff(path)))
+
+
+@app.command()
+def run(
+    description: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    apply: bool = typer.Option(False, "--apply", help="Run checks and diff guard after planning"),
+) -> None:
+    """Prepare a safe execution packet for a task."""
+    packet = execute_task(description, Path(path), dry_run=not apply)
+    console.print(JSON.from_data(packet))
 
 
 if __name__ == "__main__":
