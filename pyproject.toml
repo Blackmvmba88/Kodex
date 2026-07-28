@@ -17,6 +17,10 @@ dev = [
 [project.scripts]
 kodex = "agent.main:app"
 
+[tool.setuptools.packages.find]
+include = ["agent*"]
+exclude = ["memory*", "tests*", "docs*", "scripts*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
