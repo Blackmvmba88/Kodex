@@ -1,4 +1,17 @@
+from pathlib import Path
+
 from agent.patcher import apply_patch, propose_patch
+
+
+def _is_smoke_test_path(path: str) -> bool:
+    candidate = Path(path)
+    return (
+        len(candidate.parts) == 2
+        and candidate.parts[0] == "tests"
+        and candidate.name.startswith("test_")
+        and "_smoke" in candidate.stem
+        and candidate.suffix == ".py"
+    )
 
 
 def test_propose_patch_readme(tmp_path):
@@ -18,8 +31,7 @@ def test_apply_patch_smoke_test(tmp_path):
     assert result["write_result"]["allowed"] is True
     assert result["write_result"]["written"]
     written_file = result["write_result"]["written"][0]
-    assert written_file.startswith("tests/test_")
-    assert written_file.endswith("_smoke.py")
+    assert _is_smoke_test_path(written_file)
     assert (tmp_path / written_file).exists()
 
 
@@ -33,6 +45,5 @@ def test_apply_patch_smoke_test_uses_new_filename_when_existing(tmp_path):
     second_file = second["write_result"]["written"][0]
 
     assert first_file != second_file
-    assert second_file.startswith("tests/test_")
-    assert second_file.endswith("_smoke.py")
+    assert _is_smoke_test_path(second_file)
     assert (tmp_path / second_file).exists()
