@@ -44,10 +44,12 @@ def ship_task(task: str, path: str | Path = ".", force: bool = False) -> dict[st
             "git": before_status,
         }
 
-    project = scan_repo(root)
     patch_result = apply_patch(task, root, force=force)
     after_status = git_status(root)
     diff = inspect_diff(root)
+
+    # Re-scan after writing so newly-created tests and commands are included.
+    project = scan_repo(root)
     checks = run_project_checks(project)
 
     checks_ok = _checks_ok(checks)
