@@ -8,8 +8,10 @@ from rich.console import Console
 from rich.json import JSON
 from rich.table import Table
 
-from agent.memory import load_projects, save_project
+from agent.git_ops import git_status
+from agent.memory import find_project, load_projects, save_project
 from agent.repo_scanner import scan_repo
+from agent.task_planner import build_plan
 
 app = typer.Typer(help="Kodex — BlackMamba Dev Agent")
 console = Console()
@@ -52,23 +54,25 @@ def show_map() -> None:
 
 
 @app.command()
+def status(path: str = typer.Argument(".", help="Repository path")) -> None:
+    """Show safe git status summary."""
+    console.print(JSON.from_data(git_status(path)))
+
+
+@app.command()
 def task(description: str, repo: Optional[str] = None) -> None:
     """Create a safe implementation plan for a task."""
-    console.print("[bold]Task:[/bold]", description)
-    if repo:
-        console.print("[bold]Repo:[/bold]", repo)
+    project = find_project(repo) if repo else None
+    plan = build_plan(description, project)
+    console.print(JSON.from_data(plan))
 
-    console.print("\n[bold]Plan[/bold]")
-    steps = [
-        "Inspect repository map and current git status.",
-        "Identify files likely affected by the task.",
-        "Make the smallest safe change.",
-        "Run available tests/checks.",
-        "Summarize diff and risks.",
-        "Prepare commit/PR text only after review.",
-    ]
-    for index, step in enumerate(steps, start=1):
-        console.print(f"{index}. {step}")
+
+@app.command()
+def doctor(path: str = typer.Argument(".", help="Repository path")) -> None:
+    """Scan repo and combine project map with git state."""
+    project = scan_repo(path)
+    state = git_status(path)
+    console.print(JSON.from_data({"project": project, "git": state}))
 
 
 if __name__ == "__main__":
