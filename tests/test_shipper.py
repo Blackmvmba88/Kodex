@@ -1,4 +1,17 @@
+from pathlib import Path
+
 from agent.shipper import ship_task
+
+
+def _is_smoke_test_path(path: str) -> bool:
+    candidate = Path(path)
+    return (
+        len(candidate.parts) == 2
+        and candidate.parts[0] == "tests"
+        and candidate.name.startswith("test_")
+        and "_smoke" in candidate.stem
+        and candidate.suffix == ".py"
+    )
 
 
 def test_ship_task_blocks_dirty_worktree(tmp_path):
@@ -32,7 +45,7 @@ def test_ship_task_prepares_commit_when_safe(tmp_path):
     assert result["ok"] is True
     assert result["status"] == "ready_for_commit"
     assert result["changed_files"]
-    assert any(path.startswith("tests/test_") and path.endswith("_smoke.py") for path in result["changed_files"])
+    assert any(_is_smoke_test_path(path) for path in result["changed_files"])
     assert result["checks_ok"] is True
     assert result["diff_safe"] is True
     assert result["suggested_commit"] == "kodex: add smoke test"
