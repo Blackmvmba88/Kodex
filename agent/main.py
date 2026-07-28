@@ -13,6 +13,7 @@ from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
 from agent.git_ops import git_status
 from agent.memory import find_project, load_projects, save_project
+from agent.patcher import apply_patch, propose_patch
 from agent.repo_scanner import scan_repo
 from agent.task_planner import build_plan
 
@@ -100,6 +101,20 @@ def run(
     """Prepare a safe execution packet for a task."""
     packet = execute_task(description, Path(path), dry_run=not apply)
     console.print(JSON.from_data(packet))
+
+
+@app.command()
+def patch(
+    description: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    apply: bool = typer.Option(False, "--apply", help="Write proposed files"),
+    force: bool = typer.Option(False, "--force", help="Allow larger write plans while keeping hard path checks"),
+) -> None:
+    """Propose or apply a guarded file patch."""
+    if apply:
+        console.print(JSON.from_data(apply_patch(description, path, force=force)))
+    else:
+        console.print(JSON.from_data(propose_patch(description, path)))
 
 
 if __name__ == "__main__":
