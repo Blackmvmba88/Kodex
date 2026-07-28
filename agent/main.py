@@ -9,6 +9,7 @@ from rich.json import JSON
 from rich.table import Table
 
 from agent.checks import run_project_checks
+from agent.cleaner import clean_repo
 from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
 from agent.git_ops import git_status
@@ -126,6 +127,15 @@ def ship(
 ) -> None:
     """Apply patch, run checks, inspect diff, and prepare commit instructions."""
     console.print(JSON.from_data(ship_task(description, path, force=force)))
+
+
+@app.command()
+def clean(
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    apply: bool = typer.Option(False, "--apply", help="Remove detected generated artifacts"),
+) -> None:
+    """Preview or remove generated local artifacts safely."""
+    console.print(JSON.from_data(clean_repo(path, apply=apply)))
 
 
 if __name__ == "__main__":
