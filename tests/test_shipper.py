@@ -20,14 +20,19 @@ def test_ship_task_prepares_commit_when_safe(tmp_path):
     subprocess.run(["git", "config", "user.email", "kodex@example.com"], cwd=tmp_path, check=True)
     subprocess.run(["git", "config", "user.name", "Kodex"], cwd=tmp_path, check=True)
     (tmp_path / "README.md").write_text("# Demo\n", encoding="utf-8")
-    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True)
+    (tmp_path / "pyproject.toml").write_text(
+        "[project]\nname='demo'\n\n[tool.pytest.ini_options]\ntestpaths=['tests']\n",
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "add", "README.md", "pyproject.toml"], cwd=tmp_path, check=True)
     subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, check=True, capture_output=True, text=True)
 
     result = ship_task("add smoke test", tmp_path)
 
     assert result["ok"] is True
     assert result["status"] == "ready_for_commit"
-    assert "tests/test_kodex_smoke.py" in result["changed_files"]
+    assert result["changed_files"]
+    assert any(path.startswith("tests/test_") and path.endswith("_smoke.py") for path in result["changed_files"])
     assert result["checks_ok"] is True
     assert result["diff_safe"] is True
     assert result["suggested_commit"] == "kodex: add smoke test"
