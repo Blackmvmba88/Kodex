@@ -43,7 +43,7 @@ def git_status(repo_path: str | Path) -> dict[str, Any]:
             "error": "not a git repository",
         }
 
-    porcelain = run_git(repo_path, ["status", "--short"])
+    porcelain = run_git(repo_path, ["status", "--short", "--untracked-files=all"])
     changed_files = [line.strip() for line in porcelain.stdout.splitlines() if line.strip()]
 
     return {
