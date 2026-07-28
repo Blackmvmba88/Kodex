@@ -15,6 +15,7 @@ from agent.git_ops import git_status
 from agent.memory import find_project, load_projects, save_project
 from agent.patcher import apply_patch, propose_patch
 from agent.repo_scanner import scan_repo
+from agent.shipper import ship_task
 from agent.task_planner import build_plan
 
 app = typer.Typer(help="Kodex — BlackMamba Dev Agent")
@@ -115,6 +116,16 @@ def patch(
         console.print(JSON.from_data(apply_patch(description, path, force=force)))
     else:
         console.print(JSON.from_data(propose_patch(description, path)))
+
+
+@app.command()
+def ship(
+    description: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    force: bool = typer.Option(False, "--force", help="Allow larger write plans while keeping hard path checks"),
+) -> None:
+    """Apply patch, run checks, inspect diff, and prepare commit instructions."""
+    console.print(JSON.from_data(ship_task(description, path, force=force)))
 
 
 if __name__ == "__main__":
