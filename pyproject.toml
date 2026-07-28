@@ -9,8 +9,17 @@ dependencies = [
   "pydantic>=2.0.0"
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0"
+]
+
 [project.scripts]
 kodex = "agent.main:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
 
 [build-system]
 requires = ["setuptools>=68"]
