@@ -17,6 +17,7 @@ from agent.memory import find_project, load_projects, save_project
 from agent.patcher import apply_patch, propose_patch
 from agent.repo_scanner import scan_repo
 from agent.shipper import ship_task
+from agent.snapshot import build_snapshot
 from agent.task_planner import build_plan
 
 app = typer.Typer(help="Kodex — BlackMamba Dev Agent")
@@ -136,6 +137,12 @@ def clean(
 ) -> None:
     """Preview or remove generated local artifacts safely."""
     console.print(JSON.from_data(clean_repo(path, apply=apply)))
+
+
+@app.command()
+def snapshot(path: str = typer.Option(".", "--path", "-p", help="Repository path")) -> None:
+    """Show a compact readiness snapshot for a repository."""
+    console.print(JSON.from_data(build_snapshot(path)))
 
 
 if __name__ == "__main__":
