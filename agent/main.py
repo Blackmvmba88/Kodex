@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.json import JSON
 from rich.table import Table
 
+from agent.brancher import prepare_branch
 from agent.checks import run_project_checks
 from agent.cleaner import clean_repo
 from agent.diff_guard import inspect_diff
@@ -143,6 +144,16 @@ def clean(
 def snapshot(path: str = typer.Option(".", "--path", "-p", help="Repository path")) -> None:
     """Show a compact readiness snapshot for a repository."""
     console.print(JSON.from_data(build_snapshot(path)))
+
+
+@app.command()
+def branch(
+    description: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    no_checkout: bool = typer.Option(False, "--no-checkout", help="Create branch without checking it out"),
+) -> None:
+    """Create a safe task branch from a clean working tree."""
+    console.print(JSON.from_data(prepare_branch(description, path, checkout=not no_checkout)))
 
 
 if __name__ == "__main__":
