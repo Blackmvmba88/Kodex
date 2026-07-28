@@ -24,3 +24,18 @@ def save_project(project: dict[str, Any], memory_path: str | Path = DEFAULT_MEMO
     projects.append(project)
 
     path.write_text(json.dumps(projects, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def find_project(name: str | None, memory_path: str | Path = DEFAULT_MEMORY_PATH) -> dict[str, Any] | None:
+    if not name:
+        return None
+
+    needle = name.lower()
+    for project in load_projects(memory_path):
+        candidates = [
+            str(project.get("name", "")).lower(),
+            str(project.get("path", "")).lower(),
+        ]
+        if any(needle in candidate for candidate in candidates):
+            return project
+    return None
