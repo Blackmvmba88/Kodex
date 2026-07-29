@@ -126,9 +126,10 @@ def ship(
     description: str,
     path: str = typer.Option(".", "--path", "-p", help="Repository path"),
     force: bool = typer.Option(False, "--force", help="Allow larger write plans while keeping hard path checks"),
+    branch: bool = typer.Option(False, "--branch", help="Create/check out a safe task branch before shipping"),
 ) -> None:
     """Apply patch, run checks, inspect diff, and prepare commit instructions."""
-    console.print(JSON.from_data(ship_task(description, path, force=force)))
+    console.print(JSON.from_data(ship_task(description, path, force=force, use_branch=branch)))
 
 
 @app.command()
