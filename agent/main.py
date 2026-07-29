@@ -15,6 +15,7 @@ from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
 from agent.git_ops import git_status
 from agent.memory import find_project, load_projects, save_project
+from agent.orchestrator import orchestrate_task
 from agent.patcher import apply_patch, propose_patch
 from agent.repo_scanner import scan_repo
 from agent.shipper import ship_task
@@ -166,6 +167,16 @@ def virtualize(
 ) -> None:
     """Simulate a task without writing files, creating branches, committing, or pushing."""
     console.print(JSON.from_data(virtualize_task(description, path, use_branch=not no_branch)))
+
+
+@app.command()
+def orchestrate(
+    description: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    no_branch: bool = typer.Option(False, "--no-branch", help="Plan without a task branch"),
+) -> None:
+    """Decide the safest next step for a task without mutating the repository."""
+    console.print(JSON.from_data(orchestrate_task(description, path, use_branch=not no_branch)))
 
 
 if __name__ == "__main__":
