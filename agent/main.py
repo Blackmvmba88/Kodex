@@ -12,6 +12,7 @@ from agent.autonomous import autonomous_run, resume_run
 from agent.brancher import prepare_branch
 from agent.checks import run_project_checks
 from agent.cleaner import clean_repo
+from agent.diagnostics import diagnose_file, diagnose_text
 from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
 from agent.git_ops import git_status
@@ -178,6 +179,20 @@ def orchestrate(
 ) -> None:
     """Decide the safest next step for a task without mutating the repository."""
     console.print(JSON.from_data(orchestrate_task(description, path, use_branch=not no_branch)))
+
+
+@app.command()
+def diagnose(
+    log: Optional[str] = typer.Argument(None, help="Raw log text or path to a log file"),
+    file: bool = typer.Option(False, "--file", help="Treat the argument as a path to a log file"),
+) -> None:
+    """Classify terminal/test/git output into a readable failure diagnosis."""
+    if log is None:
+        console.print(JSON.from_data(diagnose_text("")))
+    elif file:
+        console.print(JSON.from_data(diagnose_file(log)))
+    else:
+        console.print(JSON.from_data(diagnose_text(log)))
 
 
 @app.command("auto")
