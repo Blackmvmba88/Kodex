@@ -20,6 +20,9 @@ dist/
 .coverage
 htmlcov/
 
+# Kodex runtime state
+.kodex/
+
 # Local environment/secrets
 .env
 .env.*
