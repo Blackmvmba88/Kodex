@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.json import JSON
 from rich.table import Table
 
+from agent.autonomous import autonomous_run, resume_run
 from agent.brancher import prepare_branch
 from agent.checks import run_project_checks
 from agent.cleaner import clean_repo
@@ -177,6 +178,31 @@ def orchestrate(
 ) -> None:
     """Decide the safest next step for a task without mutating the repository."""
     console.print(JSON.from_data(orchestrate_task(description, path, use_branch=not no_branch)))
+
+
+@app.command("auto")
+def auto_run(
+    description: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    apply: bool = typer.Option(False, "--apply", help="Execute the guarded local ship phase"),
+    force: bool = typer.Option(False, "--force", help="Allow larger write plans while keeping hard path checks"),
+    no_branch: bool = typer.Option(False, "--no-branch", help="Run without a task branch"),
+) -> None:
+    """Run the persisted autonomous loop through the safe local boundary."""
+    console.print(
+        JSON.from_data(
+            autonomous_run(description, path, apply=apply, force=force, use_branch=not no_branch)
+        )
+    )
+
+
+@app.command("resume")
+def resume(
+    run_id: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+) -> None:
+    """Inspect a persisted run and determine the safest recovery action."""
+    console.print(JSON.from_data(resume_run(run_id, path)))
 
 
 if __name__ == "__main__":
