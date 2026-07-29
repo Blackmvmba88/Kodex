@@ -20,6 +20,7 @@ from agent.repo_scanner import scan_repo
 from agent.shipper import ship_task
 from agent.snapshot import build_snapshot
 from agent.task_planner import build_plan
+from agent.virtualizer import virtualize_task
 
 app = typer.Typer(help="Kodex — BlackMamba Dev Agent")
 console = Console()
@@ -155,6 +156,16 @@ def branch(
 ) -> None:
     """Create a safe task branch from a clean working tree."""
     console.print(JSON.from_data(prepare_branch(description, path, checkout=not no_checkout)))
+
+
+@app.command()
+def virtualize(
+    description: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    no_branch: bool = typer.Option(False, "--no-branch", help="Simulate shipping without a task branch"),
+) -> None:
+    """Simulate a task without writing files, creating branches, committing, or pushing."""
+    console.print(JSON.from_data(virtualize_task(description, path, use_branch=not no_branch)))
 
 
 if __name__ == "__main__":
