@@ -19,6 +19,7 @@ from agent.git_ops import git_status
 from agent.memory import find_project, load_projects, save_project
 from agent.orchestrator import orchestrate_task
 from agent.patcher import apply_patch, propose_patch
+from agent.pr_summary import build_pr_summary
 from agent.repo_scanner import scan_repo
 from agent.shipper import ship_task
 from agent.snapshot import build_snapshot
@@ -193,6 +194,21 @@ def diagnose(
         console.print(JSON.from_data(diagnose_file(log)))
     else:
         console.print(JSON.from_data(diagnose_text(log)))
+
+
+@app.command("pr-summary")
+def pr_summary(
+    title: str,
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    test_log: Optional[str] = typer.Option(None, "--test-log", help="Optional inline test/check output"),
+    test_log_file: Optional[str] = typer.Option(None, "--test-log-file", help="Optional path to test/check output"),
+    summary: Optional[str] = typer.Option(None, "--summary", help="Optional human summary override"),
+) -> None:
+    """Generate a structured pull request summary from repo state."""
+    log_text = test_log
+    if test_log_file:
+        log_text = Path(test_log_file).expanduser().read_text(encoding="utf-8")
+    console.print(JSON.from_data(build_pr_summary(title, path, test_output=log_text, extra_summary=summary)))
 
 
 @app.command("auto")
