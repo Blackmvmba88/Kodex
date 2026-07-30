@@ -1,6 +1,7 @@
 import subprocess
 
 from agent.autonomous import autonomous_run, resume_run
+from agent.git_ops import git_status
 
 
 def _init_repo(tmp_path):
@@ -17,6 +18,28 @@ def _init_repo(tmp_path):
     (tests_dir / "test_demo.py").write_text("def test_demo():\n    assert True\n", encoding="utf-8")
     subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
     subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, check=True, capture_output=True, text=True)
+
+
+def test_git_status_ignores_internal_runtime_state(tmp_path):
+    _init_repo(tmp_path)
+    run_dir = tmp_path / ".kodex" / "runs"
+    run_dir.mkdir(parents=True)
+    (run_dir / "run-test.json").write_text("{}\n", encoding="utf-8")
+
+    status = git_status(tmp_path)
+
+    assert status["dirty"] is False
+    assert status["changed_files"] == []
+
+
+def test_git_status_keeps_real_changes_visible(tmp_path):
+    _init_repo(tmp_path)
+    (tmp_path / "README.md").write_text("# Changed\n", encoding="utf-8")
+
+    status = git_status(tmp_path)
+
+    assert status["dirty"] is True
+    assert any("README.md" in entry for entry in status["changed_files"])
 
 
 def test_autonomous_run_persists_planned_state(tmp_path):
