@@ -20,6 +20,7 @@ from agent.memory import find_project, load_projects, save_project
 from agent.orchestrator import orchestrate_task
 from agent.patcher import apply_patch, propose_patch
 from agent.pr_summary import build_pr_summary
+from agent.release_check import release_check
 from agent.repo_scanner import scan_repo
 from agent.shipper import ship_task
 from agent.snapshot import build_snapshot
@@ -209,6 +210,12 @@ def pr_summary(
     if test_log_file:
         log_text = Path(test_log_file).expanduser().read_text(encoding="utf-8")
     console.print(JSON.from_data(build_pr_summary(title, path, test_output=log_text, extra_summary=summary)))
+
+
+@app.command("release-check")
+def release_check_command(path: str = typer.Option(".", "--path", "-p", help="Repository path")) -> None:
+    """Evaluate whether the repository has release-ready infrastructure."""
+    console.print(JSON.from_data(release_check(path)))
 
 
 @app.command("auto")
