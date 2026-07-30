@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Any
 
 
+INTERNAL_STATE_DIR = ".kodex"
+
+
 def run_git(repo_path: str | Path, args: list[str]) -> subprocess.CompletedProcess[str]:
     root = Path(repo_path).expanduser().resolve()
     return subprocess.run(
@@ -33,6 +36,16 @@ def current_branch(repo_path: str | Path) -> str | None:
     return result.stdout.strip() or None
 
 
+def _is_internal_status_line(line: str) -> bool:
+    """Return True when a porcelain entry only describes Kodex runtime state."""
+    path = line[3:].strip() if len(line) >= 4 else line.strip()
+    candidates = [part.strip() for part in path.split(" -> ")]
+    return bool(candidates) and all(
+        candidate == INTERNAL_STATE_DIR or candidate.startswith(f"{INTERNAL_STATE_DIR}/")
+        for candidate in candidates
+    )
+
+
 def git_status(repo_path: str | Path) -> dict[str, Any]:
     if not is_git_repo(repo_path):
         return {
@@ -44,7 +57,11 @@ def git_status(repo_path: str | Path) -> dict[str, Any]:
         }
 
     porcelain = run_git(repo_path, ["status", "--short", "--untracked-files=all"])
-    changed_files = [line.strip() for line in porcelain.stdout.splitlines() if line.strip()]
+    changed_files = [
+        line.strip()
+        for line in porcelain.stdout.splitlines()
+        if line.strip() and not _is_internal_status_line(line)
+    ]
 
     return {
         "is_git_repo": True,
