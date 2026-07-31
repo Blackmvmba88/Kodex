@@ -3,17 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from agent.approval import evaluate_write_plan
-from agent.code_generator import generate_code
 from agent.context_builder import build_context
-from agent.providers.noop_provider import NoopProvider
+from agent.providers.registry import get_provider
+from agent.repair_loop import run_repair_loop
 from agent.spec_compiler import compile_spec
-
-
-def _provider_by_name(name: str):
-    if name == "noop":
-        return NoopProvider()
-    raise ValueError(f"unknown provider: {name}")
 
 
 def build_app(
@@ -24,37 +17,45 @@ def build_app(
     provider: str = "noop",
     max_repair_attempts: int = 0,
 ) -> dict[str, Any]:
-    """Compile a spec, build context, request generation, and validate the write plan.
+    """Compile specs and produce a policy-reviewed app patch preview.
 
-    This function does not write files, create branches, commit, or push. It is the
-    first safe contract for turning README/SPEC/AGENTS inputs into candidate
-    multi-file changes.
+    This function never writes files, creates branches, commits, pushes, or calls
+    external transports that a provider has not explicitly implemented.
     """
     root = Path(repository).expanduser().resolve()
     compiled = compile_spec(root, task=task, sources=sources)
     context = build_context(root, compiled)
-    selected_provider = _provider_by_name(provider)
-    generation = generate_code(task, context, selected_provider)
-    write_plan = evaluate_write_plan(root, generation.files)
+    selected_provider = get_provider(provider)
+    repair = run_repair_loop(
+        task=task,
+        context=context,
+        provider=selected_provider,
+        repo_root=root,
+        max_attempts=max_repair_attempts,
+    )
 
-    ok = bool(generation.ok) and bool(write_plan.get("allowed"))
+    ok = bool(repair["ok"])
 
     return {
         "task": task,
         "repository": str(root),
         "mode": "app_builder_preview",
-        "provider": provider,
+        "provider": selected_provider.name,
         "max_repair_attempts": max_repair_attempts,
         "ok": ok,
-        "status": "ready_for_review" if ok else "needs_attention",
+        "status": repair["status"],
         "spec": compiled.to_context(),
         "context": context,
-        "generation": {
-            "ok": generation.ok,
-            "message": generation.message,
-            "files": generation.files,
-            "diagnostics": generation.diagnostics,
+        "generation": repair["generation"],
+        "write_plan": repair["patch"],
+        "repair": {
+            "attempt_count": repair["attempt_count"],
+            "max_attempts": repair["max_attempts"],
+            "history": repair["history"],
         },
-        "write_plan": write_plan,
-        "next_step": "review generated files, then pass them through guarded patch/apply flow" if ok else None,
+        "next_step": (
+            "review generated files, then pass the accepted generation to apply_generated_patch"
+            if ok
+            else "inspect provider diagnostics and repair history"
+        ),
     }
