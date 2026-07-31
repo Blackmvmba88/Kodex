@@ -25,6 +25,8 @@ def generate_code(
     provider: ModelProvider,
     *,
     constraints: list[str] | None = None,
+    feedback: list[str] | None = None,
+    attempt: int = 0,
 ) -> ProviderResult:
     """Ask a model provider for candidate file changes using normalized context."""
     request = ProviderRequest(
@@ -32,5 +34,7 @@ def generate_code(
         system=SYSTEM_PROMPT,
         context=context,
         constraints=constraints or DEFAULT_CONSTRAINTS,
+        feedback=feedback or [],
+        attempt=attempt,
     )
     return provider.generate(request)
