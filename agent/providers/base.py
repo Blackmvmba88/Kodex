@@ -12,6 +12,8 @@ class ProviderRequest:
     system: str
     context: dict
     constraints: list[str] = field(default_factory=list)
+    feedback: list[str] = field(default_factory=list)
+    attempt: int = 0
 
 
 @dataclass(frozen=True)
