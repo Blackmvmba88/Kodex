@@ -6,14 +6,8 @@ from typing import Any
 from agent.approval import evaluate_write_plan
 from agent.code_generator import generate_code
 from agent.context_builder import build_context
-from agent.providers.noop_provider import NoopProvider
+from agent.providers.registry import available_providers, get_provider
 from agent.spec_compiler import compile_spec
-
-
-def _provider_by_name(name: str):
-    if name == "noop":
-        return NoopProvider()
-    raise ValueError(f"unknown provider: {name}")
 
 
 def build_app(
@@ -33,7 +27,7 @@ def build_app(
     root = Path(repository).expanduser().resolve()
     compiled = compile_spec(root, task=task, sources=sources)
     context = build_context(root, compiled)
-    selected_provider = _provider_by_name(provider)
+    selected_provider = get_provider(provider)
     generation = generate_code(task, context, selected_provider)
     write_plan = evaluate_write_plan(root, generation.files)
 
@@ -44,6 +38,7 @@ def build_app(
         "repository": str(root),
         "mode": "app_builder_preview",
         "provider": provider,
+        "available_providers": available_providers(),
         "max_repair_attempts": max_repair_attempts,
         "ok": ok,
         "status": "ready_for_review" if ok else "needs_attention",
