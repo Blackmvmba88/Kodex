@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.json import JSON
 from rich.table import Table
 
+from agent.app_builder import build_app
 from agent.autonomous import autonomous_run, resume_run
 from agent.brancher import prepare_branch
 from agent.checks import run_project_checks
@@ -216,6 +217,28 @@ def pr_summary(
 def release_check_command(path: str = typer.Option(".", "--path", "-p", help="Repository path")) -> None:
     """Evaluate whether the repository has release-ready infrastructure."""
     console.print(JSON.from_data(release_check(path)))
+
+
+@app.command("app-build")
+def app_build(
+    task: str = typer.Argument("Implement MVP", help="Product/task goal to build from specs"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
+    provider: str = typer.Option("noop", "--provider", help="Model provider name"),
+    source: list[str] = typer.Option(None, "--source", help="Spec source file; can be passed multiple times"),
+    max_repair_attempts: int = typer.Option(0, "--max-repair-attempts", help="Repair attempts reserved for future execution mode"),
+) -> None:
+    """Preview the README/SPEC-driven app-building pipeline without writing files."""
+    console.print(
+        JSON.from_data(
+            build_app(
+                path,
+                sources=source or None,
+                task=task,
+                provider=provider,
+                max_repair_attempts=max_repair_attempts,
+            )
+        )
+    )
 
 
 @app.command("auto")
