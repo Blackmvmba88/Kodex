@@ -20,18 +20,22 @@ class OpenAIProvider:
         model: str | None = None,
         api_key_env: str = "OPENAI_API_KEY",
     ) -> None:
-        self.model = model or os.getenv("KODEX_OPENAI_MODEL", "gpt-5.6-codex")
+        self.model = model or os.getenv("KODEX_OPENAI_MODEL")
         self.api_key_env = api_key_env
 
     def generate(self, request: ProviderRequest) -> ProviderResult:
+        diagnostics: list[str] = []
         if not os.getenv(self.api_key_env):
+            diagnostics.append(f"missing environment variable: {self.api_key_env}")
+        if not self.model:
+            diagnostics.append("missing KODEX_OPENAI_MODEL configuration")
+
+        if diagnostics:
+            diagnostics.append("no network request was attempted")
             return ProviderResult(
                 ok=False,
                 message="openai provider is not configured",
-                diagnostics=[
-                    f"missing environment variable: {self.api_key_env}",
-                    "no network request was attempted",
-                ],
+                diagnostics=diagnostics,
             )
 
         return ProviderResult(
