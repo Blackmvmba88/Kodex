@@ -62,7 +62,7 @@ def _worktree_is_clean(repo_root: Path) -> bool:
 
 
 def _run_checks(repo_root: Path) -> tuple[bool, str]:
-    """Run the project's fast check suite (pytest -x -q).  Returns (ok, output)."""
+    """Run the project's fast check suite (pytest -x -q). Returns (ok, output)."""
     result = subprocess.run(
         ["python", "-m", "pytest", "-x", "-q", "--tb=short"],
         cwd=repo_root,
@@ -102,11 +102,14 @@ def run_write_mode(
     Args:
         repository: Path to the repo root (default: current directory).
         task: Natural-language task description passed to the provider.
-        provider: Provider key (e.g. ``"noop"``, ``"openai"``).  Defaults to
+        provider: Provider key (e.g. ``"noop"``, ``"openai"``). Defaults to
             the policy's configured default.
         sources: Optional list of source globs / paths for context building.
-        force_branch: If True, skip the task-branch guard.  Use carefully.
-        dry_run: If True, validate and checkpoint but do not write files.
+        force_branch: If True, skip the task-branch guard. Use carefully.
+        dry_run: If True, perform a fully non-mutating simulation. It validates
+            the write plan and returns checkpoint/run-state previews, but writes
+            no generated files, checkpoints, run-state files, pytest cache, or
+            metadata.
         policy: Pre-loaded WritePolicy; loaded from disk if None.
 
     Returns:
@@ -121,8 +124,12 @@ def run_write_mode(
     result: dict[str, Any] = {
         "status": "initializing",
         "ok": False,
+        "dry_run": dry_run,
         "branch": "",
         "checkpoint": None,
+        "checkpoint_preview": None,
+        "run_state_preview": None,
+        "metadata_written": [],
         "written": [],
         "checks_ok": None,
         "diff_safe": None,
@@ -178,7 +185,36 @@ def run_write_mode(
         return result
 
     # ------------------------------------------------------------------
-    # 7. Checkpoint
+    # 7. Fully non-mutating dry-run boundary
+    # ------------------------------------------------------------------
+    if dry_run:
+        result["status"] = "dry_run_ready"
+        result["ok"] = True
+        result["checkpoint"] = None
+        result["checkpoint_preview"] = {
+            "would_create": loaded_policy.require_checkpoint,
+            "branch": branch,
+            "task": task,
+            "provider": selected_provider_key,
+            "file_count": len(generation.files),
+            "write_plan": write_plan,
+        }
+        result["run_state_preview"] = {
+            "would_persist": True,
+            "status": "dry_run_ready",
+            "branch": branch,
+            "task": task,
+        }
+        result["written"] = []
+        result["checks_ok"] = None
+        result["diff_safe"] = None
+        result["next_commands"] = [
+            f"kodex app-build {task!r} --apply",
+        ]
+        return result
+
+    # ------------------------------------------------------------------
+    # 8. Checkpoint
     # ------------------------------------------------------------------
     checkpoint, ckpt_path = create_checkpoint(
         repo_root=root,
@@ -189,11 +225,12 @@ def run_write_mode(
         files=generation.files,
     )
     result["checkpoint"] = str(ckpt_path)
+    result["metadata_written"].append(str(ckpt_path))
 
     # ------------------------------------------------------------------
-    # 8. Apply files
+    # 9. Apply files
     # ------------------------------------------------------------------
-    patch = apply_generated_files(root, generation.files, policy=loaded_policy, dry_run=dry_run)
+    patch = apply_generated_files(root, generation.files, policy=loaded_policy, dry_run=False)
     result["written"] = patch.written
 
     if not patch.ok:
@@ -202,19 +239,19 @@ def run_write_mode(
         return result
 
     # ------------------------------------------------------------------
-    # 9. Run checks
+    # 10. Run checks
     # ------------------------------------------------------------------
     checks_ok, check_output = _run_checks(root)
     result["checks_ok"] = checks_ok
 
     # ------------------------------------------------------------------
-    # 10. Diff safety
+    # 11. Diff safety
     # ------------------------------------------------------------------
     diff = _safe_diff(root)
     result["diff_safe"] = bool(diff)
 
     # ------------------------------------------------------------------
-    # 11. Repair loop (if checks failed and policy allows)
+    # 12. Repair loop (if checks failed and policy allows)
     # ------------------------------------------------------------------
     if not checks_ok and loaded_policy.repair_loop.enabled:
         repair = run_repair_loop(
@@ -226,13 +263,13 @@ def run_write_mode(
         )
         result["repair_attempts"] = repair.to_context()["attempts"]
         if repair.ok:
-            repair_patch = apply_generated_files(root, repair.final_files, policy=loaded_policy, dry_run=dry_run)
+            repair_patch = apply_generated_files(root, repair.final_files, policy=loaded_policy, dry_run=False)
             result["written"].extend(repair_patch.written)
             checks_ok, check_output = _run_checks(root)
             result["checks_ok"] = checks_ok
 
     # ------------------------------------------------------------------
-    # 12. Final status — always stop before commit/push
+    # 13. Final status — always stop before commit/push
     # ------------------------------------------------------------------
     if checks_ok:
         result["status"] = "ready_for_commit"
@@ -246,10 +283,11 @@ def run_write_mode(
         result["status"] = "checks_failed"
         result["diagnosis"] = diagnose_text(check_output)
 
-    # Persist run state
+    # Persist run state only in real apply mode.
     store = RunStore(root)
     run = RunState.create(task=task, path=root)
     run.update(branch=branch, status=result["status"])
-    store.save(run)
+    run_path = store.save(run)
+    result["metadata_written"].append(str(run_path))
 
     return result
