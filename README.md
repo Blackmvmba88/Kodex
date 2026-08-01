@@ -84,6 +84,46 @@ Not “I rewrote your whole app.”
 
 A controlled builder. A careful engineer. A useful serpent.
 
+## Input modes
+
+Kodex should not feel like an empty chatbot box.
+
+The product should give you clear doors into the work:
+
+```text
+Prompt       — describe what you want
+Spec         — build from README.md / SPEC.md / AGENTS.md
+Repo         — inspect the whole repository
+File         — transform one focused file
+Screenshot   — understand a UI, terminal, or visual state
+Audio        — work from sound, waveform, BPM, voice, or signal intent
+Creative     — expand a signature idea into a fresh artifact
+Demo         — run a zero-risk built-in showcase
+```
+
+So a request like:
+
+```text
+quiero una onda sinusoidal
+```
+
+is not forced into one generic answer. Kodex can interpret it through a chosen mode:
+
+```text
+Prompt   → create a sine-wave module
+Creative → make a fresh math/visual/audio artifact
+Audio    → generate an oscillator or WAV export
+Demo     → show a safe waveform showcase
+```
+
+The rule for signature creative requests:
+
+```text
+Never repeat.
+Always mutate.
+Always elevate.
+```
+
 ## Quickstart
 
 Install in editable mode:
@@ -266,5 +306,7 @@ For the product path, read:
 ```text
 docs/QUICKSTART.md
 docs/WHY_KODEX.md
+docs/INPUT_MODES.md
+docs/SIGNATURE_REQUESTS.md
 docs/WRITE_MODE.md
 ```
