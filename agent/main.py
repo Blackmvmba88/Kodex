@@ -21,6 +21,7 @@ from agent.memory import find_project, load_projects, save_project
 from agent.orchestrator import orchestrate_task
 from agent.patcher import apply_patch, propose_patch
 from agent.pr_summary import build_pr_summary
+from agent.profession_router import route_profession_dict
 from agent.release_check import release_check
 from agent.repo_scanner import scan_repo
 from agent.shipper import ship_task
@@ -217,6 +218,15 @@ def pr_summary(
 def release_check_command(path: str = typer.Option(".", "--path", "-p", help="Repository path")) -> None:
     """Evaluate whether the repository has release-ready infrastructure."""
     console.print(JSON.from_data(release_check(path)))
+
+
+@app.command("profession")
+def profession(
+    request: str = typer.Argument(..., help="Human request to route into a profession-aware lane"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+) -> None:
+    """Route a human request into profession, input mode, and output contract."""
+    console.print(JSON.from_data(route_profession_dict(request, path)))
 
 
 @app.command("app-build")
