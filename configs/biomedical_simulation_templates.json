@@ -1,0 +1,136 @@
+{
+  "biomedical_simulation_templates": {
+    "version": "0.1.0",
+    "scope": "educational_simulation_only",
+    "clinical_use": false,
+    "default_safety_notice": "Educational simulation only. Not diagnosis, treatment, or medical advice.",
+    "tracks": {
+      "tissue_mesh": {
+        "display_name": "Tissue Mesh Lab",
+        "description": "Represent living tissue as layered geometry for education and simulation.",
+        "input_modes": [
+          "prompt",
+          "diagram",
+          "image",
+          "spec",
+          "creative",
+          "classroom"
+        ],
+        "output_contracts": [
+          "tissue_simulation_plan",
+          "biomedical_visualization_brief",
+          "blackmamba_university_lab"
+        ],
+        "safe_actions": [
+          "generate_mesh_abstraction",
+          "produce_visualization_brief",
+          "create_lesson_plan",
+          "design_safe_simulation",
+          "define_measurements",
+          "state_limitations"
+        ],
+        "blocked_actions": [
+          "diagnose_patient",
+          "recommend_treatment",
+          "claim_cure",
+          "replace_clinician",
+          "instruct_biological_experimentation",
+          "simulate_clinical_outcome_as_fact"
+        ],
+        "geometry_mapping": {
+          "vertex": [
+            "cell",
+            "receptor_site",
+            "molecular_sampling_point",
+            "mesh_node"
+          ],
+          "edge": [
+            "adhesion_link",
+            "collagen_fiber",
+            "signal_path",
+            "mechanical_constraint"
+          ],
+          "face": [
+            "membrane",
+            "surface_boundary",
+            "tissue_layer",
+            "interface"
+          ],
+          "mesh": [
+            "tissue_region",
+            "layered_structure",
+            "educational_model"
+          ]
+        },
+        "experiments": [
+          {
+            "id": "BMU-BIO-001",
+            "title": "Skin as Mesh",
+            "goal": "Represent skin as a layered mesh without clinical claims.",
+            "inputs": {
+              "region": "skin",
+              "layers": [
+                "epidermis",
+                "dermis",
+                "hypodermis"
+              ],
+              "mesh_resolution": "low",
+              "simulation_type": "educational"
+            },
+            "outputs": [
+              "layer_diagram",
+              "mesh_abstraction",
+              "json_schema",
+              "safe_simulation_plan",
+              "classroom_exercise"
+            ],
+            "blackmamba_university_module": "Tissue Mesh 001"
+          },
+          {
+            "id": "BMU-BIO-002",
+            "title": "Wound Edge as Geometry",
+            "goal": "Model wound closure as a simple non-clinical mesh transformation.",
+            "inputs": {
+              "region": "generic_tissue_patch",
+              "gap_shape": "simple_2d",
+              "variables": [
+                "migration_rate",
+                "matrix_stiffness",
+                "growth_rate"
+              ]
+            },
+            "outputs": [
+              "gap_closure_curve",
+              "mesh_frames",
+              "stress_map",
+              "limitations"
+            ],
+            "blackmamba_university_module": "Wound Closure Simulation"
+          },
+          {
+            "id": "BMU-BIO-003",
+            "title": "Cellular Automata Tissue Growth",
+            "goal": "Teach growth rules through grid-based simulation.",
+            "inputs": {
+              "grid_size": "64x64",
+              "cell_states": [
+                "empty",
+                "healthy",
+                "damaged",
+                "matrix"
+              ],
+              "iterations": 100
+            },
+            "outputs": [
+              "state_frames",
+              "rule_table",
+              "student_lab",
+              "reflection_questions"
+            ],
+            "blackmamba_university_module": "Cellular Automata for Biology"
+          }
+        ]
+      }
+    }
+  }
+}
