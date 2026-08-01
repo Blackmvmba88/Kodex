@@ -36,9 +36,12 @@ class TestAppBuildPreview:
         assert not (tmp_path / "generated").exists()
 
     def test_preview_help_mentions_apply(self):
+        import re
         result = runner.invoke(app, ["app-build", "--help"])
-        assert "--apply" in result.output
-        assert "--dry-run" in result.output
+        # Strip ANSI escape codes — Rich emits them in CI environments
+        plain = re.sub(r'\x1b\[[0-9;]*m', '', result.output)
+        assert "--apply" in plain
+        assert "--dry-run" in plain
 
 
 class TestAppBuildApply:
