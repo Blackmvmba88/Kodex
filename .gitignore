@@ -20,6 +20,11 @@ dist/
 .coverage
 htmlcov/
 
+# Kodex runtime artifacts (checkpoints, run state, generated outputs)
+.kodex/checkpoints/
+.kodex/runs/
+generated/
+
 # Local environment/secrets
 .env
 .env.*
