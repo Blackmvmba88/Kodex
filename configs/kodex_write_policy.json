@@ -37,6 +37,13 @@
     "delete_file",
     "destructive_migration"
   ],
+  "checks": {
+    "commands": [
+      "python -m pytest -x -q --tb=short"
+    ],
+    "stop_on_failure": true,
+    "timeout_seconds": 120
+  },
   "repair_loop": {
     "enabled": true,
     "max_attempts": 3,
