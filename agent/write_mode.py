@@ -21,6 +21,7 @@ Kodex never auto-commits, pushes, merges, deletes sensitive files, or opens
 a PR.  The caller is always responsible for the final ``git add / commit / push``.
 """
 
+import shlex
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -61,16 +62,62 @@ def _worktree_is_clean(repo_root: Path) -> bool:
     return result.returncode == 0 and result.stdout.strip() == ""
 
 
-def _run_checks(repo_root: Path) -> tuple[bool, str]:
-    """Run the project's fast check suite (pytest -x -q). Returns (ok, output)."""
-    result = subprocess.run(
-        ["python", "-m", "pytest", "-x", "-q", "--tb=short"],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-    )
-    output = (result.stdout + result.stderr).strip()
-    return result.returncode == 0, output
+def _run_checks(repo_root: Path, policy: WritePolicy) -> tuple[bool, str, list[dict[str, Any]]]:
+    """Run configured check commands in order. Returns (ok, combined_output, details)."""
+    details: list[dict[str, Any]] = []
+    combined_output: list[str] = []
+
+    commands = policy.checks.normalized_commands()
+    if not commands:
+        return True, "", []
+
+    for command in commands:
+        try:
+            argv = shlex.split(command)
+        except ValueError as exc:
+            detail = {
+                "command": command,
+                "ok": False,
+                "returncode": None,
+                "output": f"invalid check command: {exc}",
+            }
+            details.append(detail)
+            combined_output.append(detail["output"])
+            if policy.checks.stop_on_failure:
+                break
+            continue
+
+        try:
+            result = subprocess.run(
+                argv,
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=policy.checks.timeout_seconds,
+            )
+            output = (result.stdout + result.stderr).strip()
+            detail = {
+                "command": command,
+                "ok": result.returncode == 0,
+                "returncode": result.returncode,
+                "output": output,
+            }
+        except subprocess.TimeoutExpired as exc:
+            output = ((exc.stdout or "") + (exc.stderr or "")).strip()
+            detail = {
+                "command": command,
+                "ok": False,
+                "returncode": None,
+                "output": f"check timed out after {policy.checks.timeout_seconds}s\n{output}".strip(),
+            }
+
+        details.append(detail)
+        combined_output.append(detail["output"])
+
+        if not detail["ok"] and policy.checks.stop_on_failure:
+            break
+
+    return all(detail["ok"] for detail in details), "\n".join(part for part in combined_output if part), details
 
 
 def _safe_diff(repo_root: Path) -> str:
@@ -132,6 +179,7 @@ def run_write_mode(
         "metadata_written": [],
         "written": [],
         "checks_ok": None,
+        "checks": [],
         "diff_safe": None,
         "diagnosis": None,
         "repair_attempts": [],
@@ -207,9 +255,10 @@ def run_write_mode(
         }
         result["written"] = []
         result["checks_ok"] = None
+        result["checks"] = []
         result["diff_safe"] = None
         result["next_commands"] = [
-            f"kodex app-build {task!r} --apply",
+            f"kodex app-build {task!r} --path {str(root)!r} --apply",
         ]
         return result
 
@@ -241,8 +290,9 @@ def run_write_mode(
     # ------------------------------------------------------------------
     # 10. Run checks
     # ------------------------------------------------------------------
-    checks_ok, check_output = _run_checks(root)
+    checks_ok, check_output, check_details = _run_checks(root, loaded_policy)
     result["checks_ok"] = checks_ok
+    result["checks"] = check_details
 
     # ------------------------------------------------------------------
     # 11. Diff safety
@@ -265,8 +315,9 @@ def run_write_mode(
         if repair.ok:
             repair_patch = apply_generated_files(root, repair.final_files, policy=loaded_policy, dry_run=False)
             result["written"].extend(repair_patch.written)
-            checks_ok, check_output = _run_checks(root)
+            checks_ok, check_output, check_details = _run_checks(root, loaded_policy)
             result["checks_ok"] = checks_ok
+            result["checks"] = check_details
 
     # ------------------------------------------------------------------
     # 13. Final status — always stop before commit/push
