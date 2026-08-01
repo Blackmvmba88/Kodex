@@ -1,0 +1,55 @@
+{
+  "mode": "guarded_write",
+  "default_apply": false,
+  "require_clean_worktree": true,
+  "require_task_branch": true,
+  "allow_direct_main": false,
+  "require_checkpoint": true,
+  "require_write_plan_validation": true,
+  "max_files_per_write": 12,
+  "max_bytes_per_file": 50000,
+  "max_total_bytes": 250000,
+  "blocked_paths": [
+    ".git/",
+    ".env",
+    ".env.local",
+    ".env.production",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx",
+    "node_modules/",
+    ".venv/",
+    "venv/",
+    "__pycache__/"
+  ],
+  "allowed_default_roots": [
+    "agent/",
+    "tests/",
+    "docs/",
+    "scripts/",
+    "examples/",
+    ".github/"
+  ],
+  "always_stop_before": [
+    "git commit",
+    "git push",
+    "delete_file",
+    "destructive_migration"
+  ],
+  "repair_loop": {
+    "enabled": true,
+    "max_attempts": 3,
+    "requires_diagnosis": true,
+    "requires_tests_after_each_attempt": true
+  },
+  "providers": {
+    "default": "noop",
+    "allowed": [
+      "noop",
+      "openai",
+      "ollama"
+    ],
+    "network_calls_enabled_by_default": false
+  }
+}

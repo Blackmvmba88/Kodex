@@ -29,6 +29,29 @@ def _is_sensitive_path(path: Path) -> bool:
     return False
 
 
+def evaluate_write_plan(
+    repo_root: "str | Path",
+    file_changes: "dict[str, str]",
+    *,
+    force: bool = False,
+    max_files: int = DEFAULT_MAX_FILES,
+    max_bytes: int = DEFAULT_MAX_BYTES,
+) -> "dict":
+    """Public alias used by app_builder; delegates to review_write_plan and returns a plain dict."""
+    decision = review_write_plan(
+        repo_root,
+        file_changes,
+        force=force,
+        max_files=max_files,
+        max_bytes=max_bytes,
+    )
+    return {
+        "allowed": decision.allowed,
+        "reasons": decision.reasons,
+        "warnings": decision.warnings,
+    }
+
+
 def review_write_plan(
     repo_root: str | Path,
     file_changes: dict[str, str],
