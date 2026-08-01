@@ -110,6 +110,13 @@ def _run_checks(repo_root: Path, policy: WritePolicy) -> tuple[bool, str, list[d
                 "returncode": None,
                 "output": f"check timed out after {policy.checks.timeout_seconds}s\n{output}".strip(),
             }
+        except OSError as exc:
+            detail = {
+                "command": command,
+                "ok": False,
+                "returncode": None,
+                "output": f"failed to run check command: {exc}",
+            }
 
         details.append(detail)
         combined_output.append(detail["output"])
