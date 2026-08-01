@@ -226,19 +226,43 @@ def app_build(
     provider: str = typer.Option("noop", "--provider", help="Model provider name"),
     source: list[str] = typer.Option(None, "--source", help="Spec source file; can be passed multiple times"),
     max_repair_attempts: int = typer.Option(0, "--max-repair-attempts", help="Repair attempts reserved for future execution mode"),
+    apply: bool = typer.Option(False, "--apply", help="Run the full guarded write pipeline (checkpoint → apply → checks)"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Validate and checkpoint without writing files (implies --apply path)"),
 ) -> None:
-    """Preview the README/SPEC-driven app-building pipeline without writing files."""
-    console.print(
-        JSON.from_data(
-            build_app(
-                path,
-                sources=source or None,
-                task=task,
-                provider=provider,
-                max_repair_attempts=max_repair_attempts,
+    """Preview or apply the README/SPEC-driven app-building pipeline.
+
+    Without --apply: compiles spec, builds context, calls provider, validates
+    write plan, and returns a preview — no files are written.
+
+    With --apply: runs the full guarded write pipeline including checkpoint
+    creation, atomic file application, check execution, optional repair loop,
+    and stops at ready_for_commit. Never auto-commits or pushes.
+    """
+    if apply or dry_run:
+        from agent.write_mode import run_write_mode
+        console.print(
+            JSON.from_data(
+                run_write_mode(
+                    path,
+                    task=task,
+                    provider=provider,
+                    sources=source or None,
+                    dry_run=dry_run,
+                )
             )
         )
-    )
+    else:
+        console.print(
+            JSON.from_data(
+                build_app(
+                    path,
+                    sources=source or None,
+                    task=task,
+                    provider=provider,
+                    max_repair_attempts=max_repair_attempts,
+                )
+            )
+        )
 
 
 @app.command("auto")
