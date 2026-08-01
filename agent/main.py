@@ -13,6 +13,7 @@ from agent.autonomous import autonomous_run, resume_run
 from agent.brancher import prepare_branch
 from agent.checks import run_project_checks
 from agent.cleaner import clean_repo
+from agent.demo import available_demos, build_demo_packet
 from agent.diagnostics import diagnose_file, diagnose_text
 from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
@@ -21,6 +22,7 @@ from agent.memory import find_project, load_projects, save_project
 from agent.orchestrator import orchestrate_task
 from agent.patcher import apply_patch, propose_patch
 from agent.pr_summary import build_pr_summary
+from agent.profession_router import route_profession_dict
 from agent.release_check import release_check
 from agent.repo_scanner import scan_repo
 from agent.shipper import ship_task
@@ -217,6 +219,29 @@ def pr_summary(
 def release_check_command(path: str = typer.Option(".", "--path", "-p", help="Repository path")) -> None:
     """Evaluate whether the repository has release-ready infrastructure."""
     console.print(JSON.from_data(release_check(path)))
+
+
+@app.command("profession")
+def profession(
+    request: str = typer.Argument(..., help="Human request to route into a profession-aware lane"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+) -> None:
+    """Route a human request into profession, input mode, and output contract."""
+    console.print(JSON.from_data(route_profession_dict(request, path)))
+
+
+@app.command("demo")
+def demo(
+    name: str = typer.Option("sine", "--name", "-n", help="Bundled demo name"),
+    request: Optional[str] = typer.Option(None, "--request", "-r", help="Optional custom request to route"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    list_demos: bool = typer.Option(False, "--list", help="List bundled demos and exit"),
+) -> None:
+    """Show a non-mutating Kodex product demo packet."""
+    if list_demos:
+        console.print(JSON.from_data({"demos": available_demos()}))
+        return
+    console.print(JSON.from_data(build_demo_packet(name, repo_root=path, request=request)))
 
 
 @app.command("app-build")

@@ -21,6 +21,7 @@ Kodex never auto-commits, pushes, merges, deletes sensitive files, or opens
 a PR.  The caller is always responsible for the final ``git add / commit / push``.
 """
 
+import shlex
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -132,6 +133,7 @@ def run_write_mode(
         "metadata_written": [],
         "written": [],
         "checks_ok": None,
+        "checks": [],
         "diff_safe": None,
         "diagnosis": None,
         "repair_attempts": [],
@@ -241,8 +243,9 @@ def run_write_mode(
     # ------------------------------------------------------------------
     # 10. Run checks
     # ------------------------------------------------------------------
-    checks_ok, check_output = _run_checks(root)
+    checks_ok, check_output, check_details = _run_checks(root, loaded_policy)
     result["checks_ok"] = checks_ok
+    result["checks"] = check_details
 
     # ------------------------------------------------------------------
     # 11. Diff safety
@@ -265,8 +268,9 @@ def run_write_mode(
         if repair.ok:
             repair_patch = apply_generated_files(root, repair.final_files, policy=loaded_policy, dry_run=False)
             result["written"].extend(repair_patch.written)
-            checks_ok, check_output = _run_checks(root)
+            checks_ok, check_output, check_details = _run_checks(root, loaded_policy)
             result["checks_ok"] = checks_ok
+            result["checks"] = check_details
 
     # ------------------------------------------------------------------
     # 13. Final status — always stop before commit/push

@@ -6,6 +6,7 @@ from pathlib import Path
 
 
 _DEFAULT_POLICY_PATH = Path("configs/kodex_write_policy.json")
+_DEFAULT_CHECK_COMMANDS = ["python -m pytest -x -q --tb=short"]
 
 
 @dataclass
@@ -24,6 +25,18 @@ class ProviderPolicy:
 
 
 @dataclass
+class CheckPolicy:
+    """Commands run after generated files are applied."""
+
+    commands: list[str] = field(default_factory=lambda: list(_DEFAULT_CHECK_COMMANDS))
+    stop_on_failure: bool = True
+    timeout_seconds: int = 120
+
+    def normalized_commands(self) -> list[str]:
+        return [command.strip() for command in self.commands if command.strip()]
+
+
+@dataclass
 class WritePolicy:
     mode: str = "guarded_write"
     default_apply: bool = False
@@ -38,6 +51,7 @@ class WritePolicy:
     blocked_paths: list[str] = field(default_factory=list)
     allowed_default_roots: list[str] = field(default_factory=list)
     always_stop_before: list[str] = field(default_factory=list)
+    checks: CheckPolicy = field(default_factory=CheckPolicy)
     repair_loop: RepairPolicy = field(default_factory=RepairPolicy)
     providers: ProviderPolicy = field(default_factory=ProviderPolicy)
 
@@ -79,9 +93,16 @@ def load_write_policy(
 
     repair_raw = raw.pop("repair_loop", {})
     providers_raw = raw.pop("providers", {})
+    checks_raw = raw.pop("checks", {})
+
+    # Backwards-compatible shorthand:
+    # "checks": ["pytest", "ruff check ."]
+    if isinstance(checks_raw, list):
+        checks_raw = {"commands": checks_raw}
 
     return WritePolicy(
         **{k: v for k, v in raw.items() if k in WritePolicy.__dataclass_fields__},
+        checks=CheckPolicy(**{k: v for k, v in checks_raw.items() if k in CheckPolicy.__dataclass_fields__}),
         repair_loop=RepairPolicy(**{k: v for k, v in repair_raw.items() if k in RepairPolicy.__dataclass_fields__}),
         providers=ProviderPolicy(**{k: v for k, v in providers_raw.items() if k in ProviderPolicy.__dataclass_fields__}),
     )

@@ -1,0 +1,211 @@
+{
+  "version": "0.1.0",
+  "purpose": "Seed registry for Kodex profession-aware workflows and BlackMamba University modules.",
+  "principles": [
+    "input mode first",
+    "profession lane before generation",
+    "safe output contracts",
+    "never repeat; always mutate; always elevate",
+    "every request can become a reusable learning module"
+  ],
+  "professions": [
+    {
+      "id": "music_producer",
+      "name": "Music Producer",
+      "serves": ["producer", "songwriter", "DJ", "audio engineer", "label operator"],
+      "common_requests": [
+        "make this song hit harder",
+        "write lyrics in my format",
+        "analyze BPM, flow, syllables, difficulty",
+        "make a release checklist",
+        "turn this audio into a visual concept"
+      ],
+      "input_modes": ["prompt", "audio", "file", "creative", "demo"],
+      "output_contracts": [
+        "arrangement_plan",
+        "lyric_sheet",
+        "mix_notes",
+        "cover_art_brief",
+        "release_plan",
+        "teaching_module"
+      ],
+      "safe_actions": ["analyze", "draft", "template", "generate_preview", "write_guarded_files"],
+      "blocked_actions": ["publish_without_confirmation", "overwrite_master_audio", "claim_rights_without_user_context"],
+      "experiments": [
+        "flow difficulty analyzer",
+        "BPM-to-visual generator",
+        "lyric format normalizer",
+        "release readiness checker"
+      ],
+      "blackmamba_university_modules": [
+        "Song Anatomy",
+        "Rap Metrics Lab",
+        "Release Pipeline",
+        "Audio-to-Visual Thinking"
+      ],
+      "signature_variations": [
+        "never reuse the same lyric structure twice",
+        "preserve user line-break style",
+        "mutate visual concepts per song"
+      ]
+    },
+    {
+      "id": "software_builder",
+      "name": "Software Builder",
+      "serves": ["developer", "founder", "maker", "automation builder"],
+      "common_requests": [
+        "turn this README into an app",
+        "add this feature safely",
+        "create tests",
+        "explain the repo",
+        "repair failing checks"
+      ],
+      "input_modes": ["repo", "spec", "prompt", "file", "screenshot"],
+      "output_contracts": [
+        "spec",
+        "implementation_plan",
+        "write_plan",
+        "patch_preview",
+        "test_plan",
+        "ready_for_commit_packet"
+      ],
+      "safe_actions": ["scan", "plan", "dry_run", "checkpoint", "apply_guarded", "run_checks"],
+      "blocked_actions": ["commit_without_approval", "push_without_approval", "write_secrets", "overwrite_main_directly"],
+      "experiments": [
+        "profession-aware app builder",
+        "repair loop with test diagnosis",
+        "input-mode router",
+        "demo command"
+      ],
+      "blackmamba_university_modules": [
+        "Repo Reading",
+        "Safe Refactoring",
+        "Testing Rituals",
+        "AI Agent Boundaries"
+      ],
+      "signature_variations": [
+        "preview before mutation",
+        "dry-run must be non-mutating",
+        "stop at human commit boundary"
+      ]
+    },
+    {
+      "id": "educator",
+      "name": "Educator",
+      "serves": ["teacher", "mentor", "course creator", "BlackMamba University builder"],
+      "common_requests": [
+        "turn this into a lesson",
+        "make me a quiz",
+        "explain it by levels",
+        "create a project-based module",
+        "make a rubric"
+      ],
+      "input_modes": ["prompt", "file", "profession", "course", "demo"],
+      "output_contracts": [
+        "lesson_plan",
+        "quiz",
+        "rubric",
+        "project_brief",
+        "student_path",
+        "portfolio_artifact"
+      ],
+      "safe_actions": ["explain", "scaffold", "quiz", "summarize", "generate_project"],
+      "blocked_actions": ["fabricate_source_claims", "grade_high_stakes_work_without_context"],
+      "experiments": [
+        "request-to-course converter",
+        "profession curriculum generator",
+        "student project ladder",
+        "skill tree builder"
+      ],
+      "blackmamba_university_modules": [
+        "Learning by Building",
+        "Creative Math Lab",
+        "AI Workflow Literacy",
+        "Portfolio Education"
+      ],
+      "signature_variations": [
+        "teach from the user's artifact",
+        "convert every build into a lesson",
+        "prefer projects over abstract lectures"
+      ]
+    },
+    {
+      "id": "visual_artist",
+      "name": "Visual Artist",
+      "serves": ["designer", "cover artist", "VJ", "brand builder", "video creator"],
+      "common_requests": [
+        "make this cover look expensive",
+        "create a visual identity",
+        "turn this screenshot into a design brief",
+        "make social assets",
+        "create a video direction"
+      ],
+      "input_modes": ["image", "screenshot", "prompt", "creative", "file"],
+      "output_contracts": [
+        "art_brief",
+        "prompt_pack",
+        "layout_spec",
+        "brand_tokens",
+        "asset_checklist"
+      ],
+      "safe_actions": ["describe", "brief", "template", "generate_variations", "export_specs"],
+      "blocked_actions": ["claim_identity_of_real_people", "overwrite_source_art_destructively"],
+      "experiments": [
+        "cover art director",
+        "brand palette generator",
+        "music-to-visual mapper",
+        "video storyboard generator"
+      ],
+      "blackmamba_university_modules": [
+        "Cover Design Lab",
+        "Visual Identity",
+        "Prompt Direction",
+        "Music Video Frames"
+      ],
+      "signature_variations": [
+        "always respect BlackMamba brand tokens",
+        "generate panorama and square when useful",
+        "never repeat the same visual composition"
+      ]
+    },
+    {
+      "id": "scientist_lab",
+      "name": "Scientist / Lab",
+      "serves": ["student", "researcher", "experimenter", "math/physics learner"],
+      "common_requests": [
+        "model this phenomenon",
+        "simulate this equation",
+        "explain this experiment",
+        "turn this into a notebook",
+        "make a visual demo"
+      ],
+      "input_modes": ["prompt", "file", "data", "creative", "demo"],
+      "output_contracts": [
+        "model_explanation",
+        "simulation_plan",
+        "notebook_outline",
+        "experiment_protocol",
+        "learning_module"
+      ],
+      "safe_actions": ["explain", "simulate", "visualize", "template", "generate_demo"],
+      "blocked_actions": ["unsafe_lab_protocols", "medical_or_legal_claims_without_sources"],
+      "experiments": [
+        "sinusoidal waveform lab",
+        "physics-to-audio demo",
+        "math-to-visual module",
+        "BlackMamba University science track"
+      ],
+      "blackmamba_university_modules": [
+        "Creative Signals",
+        "Waveforms and Sound",
+        "Simulation Thinking",
+        "Math as Visual Instrument"
+      ],
+      "signature_variations": [
+        "a sine wave can become audio, visual, math, or app",
+        "every concept should have a demo path",
+        "prefer experiment over static explanation"
+      ]
+    }
+  ]
+}
