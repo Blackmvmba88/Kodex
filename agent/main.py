@@ -6,7 +6,9 @@ from typing import Optional
 import typer
 from rich.console import Console
 from rich.json import JSON
+from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 from agent.app_builder import build_app
 from agent.autonomous import autonomous_run, resume_run
@@ -32,6 +34,40 @@ from agent.virtualizer import virtualize_task
 
 app = typer.Typer(help="Kodex — BlackMamba Dev Agent")
 console = Console()
+
+
+def _print_demo_human(packet: dict) -> None:
+    """Render a premium, non-JSON demo view for first-touch users."""
+    route = packet["route"]
+
+    title = Text("KODEX", style="bold green")
+    title.append("  BlackMamba local-first builder agent", style="dim")
+    console.print(Panel(title, subtitle="no mutation · no provider calls · no repo writes", border_style="green"))
+
+    summary = Table(show_header=False, box=None, padding=(0, 2))
+    summary.add_column("Key", style="bold cyan")
+    summary.add_column("Value")
+    summary.add_row("Request", packet["request"])
+    summary.add_row("Profession", f"{route['profession_name']} ({route['profession']})")
+    summary.add_row("Input Mode", route["input_mode"])
+    summary.add_row("Output", route["output_contract"])
+    summary.add_row("Mutation", packet["mutation"])
+    summary.add_row("Confidence", str(route["confidence"]))
+    console.print(Panel(summary, title="Intent Route", border_style="cyan"))
+
+    flow = Table(title="Flow", show_header=True)
+    flow.add_column("Step", style="bold")
+    flow.add_column("Status", style="green")
+    flow.add_column("Meaning")
+    for item in packet["flow"]:
+        flow.add_row(item["step"], item["status"], item["meaning"])
+    console.print(flow)
+
+    commands = "\n".join(f"  {command}" for command in packet["commands"])
+    console.print(Panel(commands, title="Try Next", border_style="magenta"))
+
+    promise = " · ".join(packet["promise"])
+    console.print(Panel(promise, title="Product Promise", border_style="green"))
 
 
 @app.command()
@@ -106,11 +142,7 @@ def diff_guard(path: str = typer.Argument(".", help="Repository path")) -> None:
 
 
 @app.command()
-def run(
-    description: str,
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-    apply: bool = typer.Option(False, "--apply", help="Run checks and diff guard after planning"),
-) -> None:
+def run(description: str, path: str = typer.Option(".", "--path", "-p", help="Repository path"), apply: bool = typer.Option(False, "--apply", help="Run checks and diff guard after planning")) -> None:
     """Prepare a safe execution packet for a task."""
     packet = execute_task(description, Path(path), dry_run=not apply)
     console.print(JSON.from_data(packet))
@@ -131,21 +163,13 @@ def patch(
 
 
 @app.command()
-def ship(
-    description: str,
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-    force: bool = typer.Option(False, "--force", help="Allow larger write plans while keeping hard path checks"),
-    branch: bool = typer.Option(False, "--branch", help="Create/check out a safe task branch before shipping"),
-) -> None:
+def ship(description: str, path: str = typer.Option(".", "--path", "-p", help="Repository path"), force: bool = typer.Option(False, "--force", help="Allow larger write plans while keeping hard path checks"), branch: bool = typer.Option(False, "--branch", help="Create/check out a safe task branch before shipping")) -> None:
     """Apply patch, run checks, inspect diff, and prepare commit instructions."""
     console.print(JSON.from_data(ship_task(description, path, force=force, use_branch=branch)))
 
 
 @app.command()
-def clean(
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-    apply: bool = typer.Option(False, "--apply", help="Remove detected generated artifacts"),
-) -> None:
+def clean(path: str = typer.Option(".", "--path", "-p", help="Repository path"), apply: bool = typer.Option(False, "--apply", help="Remove detected generated artifacts")) -> None:
     """Preview or remove generated local artifacts safely."""
     console.print(JSON.from_data(clean_repo(path, apply=apply)))
 
@@ -157,40 +181,25 @@ def snapshot(path: str = typer.Option(".", "--path", "-p", help="Repository path
 
 
 @app.command()
-def branch(
-    description: str,
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-    no_checkout: bool = typer.Option(False, "--no-checkout", help="Create branch without checking it out"),
-) -> None:
+def branch(description: str, path: str = typer.Option(".", "--path", "-p", help="Repository path"), no_checkout: bool = typer.Option(False, "--no-checkout", help="Create branch without checking it out")) -> None:
     """Create a safe task branch from a clean working tree."""
     console.print(JSON.from_data(prepare_branch(description, path, checkout=not no_checkout)))
 
 
 @app.command()
-def virtualize(
-    description: str,
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-    no_branch: bool = typer.Option(False, "--no-branch", help="Simulate shipping without a task branch"),
-) -> None:
+def virtualize(description: str, path: str = typer.Option(".", "--path", "-p", help="Repository path"), no_branch: bool = typer.Option(False, "--no-branch", help="Simulate shipping without a task branch")) -> None:
     """Simulate a task without writing files, creating branches, committing, or pushing."""
     console.print(JSON.from_data(virtualize_task(description, path, use_branch=not no_branch)))
 
 
 @app.command()
-def orchestrate(
-    description: str,
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-    no_branch: bool = typer.Option(False, "--no-branch", help="Plan without a task branch"),
-) -> None:
+def orchestrate(description: str, path: str = typer.Option(".", "--path", "-p", help="Repository path"), no_branch: bool = typer.Option(False, "--no-branch", help="Plan without a task branch")) -> None:
     """Decide the safest next step for a task without mutating the repository."""
     console.print(JSON.from_data(orchestrate_task(description, path, use_branch=not no_branch)))
 
 
 @app.command()
-def diagnose(
-    log: Optional[str] = typer.Argument(None, help="Raw log text or path to a log file"),
-    file: bool = typer.Option(False, "--file", help="Treat the argument as a path to a log file"),
-) -> None:
+def diagnose(log: Optional[str] = typer.Argument(None, help="Raw log text or path to a log file"), file: bool = typer.Option(False, "--file", help="Treat the argument as a path to a log file")) -> None:
     """Classify terminal/test/git output into a readable failure diagnosis."""
     if log is None:
         console.print(JSON.from_data(diagnose_text("")))
@@ -201,13 +210,7 @@ def diagnose(
 
 
 @app.command("pr-summary")
-def pr_summary(
-    title: str,
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-    test_log: Optional[str] = typer.Option(None, "--test-log", help="Optional inline test/check output"),
-    test_log_file: Optional[str] = typer.Option(None, "--test-log-file", help="Optional path to test/check output"),
-    summary: Optional[str] = typer.Option(None, "--summary", help="Optional human summary override"),
-) -> None:
+def pr_summary(title: str, path: str = typer.Option(".", "--path", "-p", help="Repository path"), test_log: Optional[str] = typer.Option(None, "--test-log", help="Optional inline test/check output"), test_log_file: Optional[str] = typer.Option(None, "--test-log-file", help="Optional path to test/check output"), summary: Optional[str] = typer.Option(None, "--summary", help="Optional human summary override")) -> None:
     """Generate a structured pull request summary from repo state."""
     log_text = test_log
     if test_log_file:
@@ -222,10 +225,7 @@ def release_check_command(path: str = typer.Option(".", "--path", "-p", help="Re
 
 
 @app.command("profession")
-def profession(
-    request: str = typer.Argument(..., help="Human request to route into a profession-aware lane"),
-    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
-) -> None:
+def profession(request: str = typer.Argument(..., help="Human request to route into a profession-aware lane"), path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates")) -> None:
     """Route a human request into profession, input mode, and output contract."""
     console.print(JSON.from_data(route_profession_dict(request, path)))
 
@@ -234,14 +234,19 @@ def profession(
 def demo(
     name: str = typer.Option("sine", "--name", "-n", help="Bundled demo name"),
     request: Optional[str] = typer.Option(None, "--request", "-r", help="Optional custom request to route"),
-    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    path: str = typer.Option(".", "--path", "-p", help="Optional repository path containing profession templates"),
     list_demos: bool = typer.Option(False, "--list", help="List bundled demos and exit"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON instead of human demo view"),
 ) -> None:
-    """Show a non-mutating Kodex product demo packet."""
+    """Show a non-mutating Kodex product demo."""
     if list_demos:
         console.print(JSON.from_data({"demos": available_demos()}))
         return
-    console.print(JSON.from_data(build_demo_packet(name, repo_root=path, request=request)))
+    packet = build_demo_packet(name, repo_root=path, request=request)
+    if json_output:
+        console.print(JSON.from_data(packet))
+    else:
+        _print_demo_human(packet)
 
 
 @app.command("app-build")
@@ -254,63 +259,22 @@ def app_build(
     apply: bool = typer.Option(False, "--apply", help="Run the full guarded write pipeline (checkpoint → apply → checks)"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Validate and checkpoint without writing files (implies --apply path)"),
 ) -> None:
-    """Preview or apply the README/SPEC-driven app-building pipeline.
-
-    Without --apply: compiles spec, builds context, calls provider, validates
-    write plan, and returns a preview — no files are written.
-
-    With --apply: runs the full guarded write pipeline including checkpoint
-    creation, atomic file application, check execution, optional repair loop,
-    and stops at ready_for_commit. Never auto-commits or pushes.
-    """
+    """Preview or apply the README/SPEC-driven app-building pipeline."""
     if apply or dry_run:
         from agent.write_mode import run_write_mode
-        console.print(
-            JSON.from_data(
-                run_write_mode(
-                    path,
-                    task=task,
-                    provider=provider,
-                    sources=source or None,
-                    dry_run=dry_run,
-                )
-            )
-        )
+        console.print(JSON.from_data(run_write_mode(path, task=task, provider=provider, sources=source or None, dry_run=dry_run)))
     else:
-        console.print(
-            JSON.from_data(
-                build_app(
-                    path,
-                    sources=source or None,
-                    task=task,
-                    provider=provider,
-                    max_repair_attempts=max_repair_attempts,
-                )
-            )
-        )
+        console.print(JSON.from_data(build_app(path, sources=source or None, task=task, provider=provider, max_repair_attempts=max_repair_attempts)))
 
 
 @app.command("auto")
-def auto_run(
-    description: str,
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-    apply: bool = typer.Option(False, "--apply", help="Execute the guarded local ship phase"),
-    force: bool = typer.Option(False, "--force", help="Allow larger write plans while keeping hard path checks"),
-    no_branch: bool = typer.Option(False, "--no-branch", help="Run without a task branch"),
-) -> None:
+def auto_run(description: str, path: str = typer.Option(".", "--path", "-p", help="Repository path"), apply: bool = typer.Option(False, "--apply", help="Execute the guarded local ship phase"), force: bool = typer.Option(False, "--force", help="Allow larger write plans while keeping hard path checks"), no_branch: bool = typer.Option(False, "--no-branch", help="Run without a task branch")) -> None:
     """Run the persisted autonomous loop through the safe local boundary."""
-    console.print(
-        JSON.from_data(
-            autonomous_run(description, path, apply=apply, force=force, use_branch=not no_branch)
-        )
-    )
+    console.print(JSON.from_data(autonomous_run(description, path, apply=apply, force=force, use_branch=not no_branch)))
 
 
 @app.command("resume")
-def resume(
-    run_id: str,
-    path: str = typer.Option(".", "--path", "-p", help="Repository path"),
-) -> None:
+def resume(run_id: str, path: str = typer.Option(".", "--path", "-p", help="Repository path")) -> None:
     """Inspect a persisted run and determine the safest recovery action."""
     console.print(JSON.from_data(resume_run(run_id, path)))
 
