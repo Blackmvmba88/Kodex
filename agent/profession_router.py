@@ -24,6 +24,90 @@ from typing import Any
 
 _DEFAULT_TEMPLATE_PATH = Path("configs/profession_templates.json")
 
+_BUNDLED_REGISTRY: dict[str, Any] = {
+    "version": "0.1.0",
+    "purpose": "Bundled fallback registry for installed Kodex profession-aware workflows.",
+    "principles": [
+        "input mode first",
+        "profession lane before generation",
+        "safe output contracts",
+        "never repeat; always mutate; always elevate",
+        "every request can become a reusable learning module",
+    ],
+    "professions": [
+        {
+            "id": "music_producer",
+            "name": "Music Producer",
+            "input_modes": ["prompt", "audio", "file", "creative", "demo"],
+            "output_contracts": [
+                "arrangement_plan",
+                "lyric_sheet",
+                "mix_notes",
+                "cover_art_brief",
+                "release_plan",
+                "teaching_module",
+            ],
+            "safe_actions": ["analyze", "draft", "template", "generate_preview", "write_guarded_files"],
+            "blocked_actions": ["publish_without_confirmation", "overwrite_master_audio"],
+            "experiments": ["flow difficulty analyzer", "BPM-to-visual generator", "release readiness checker"],
+            "blackmamba_university_modules": ["Song Anatomy", "Rap Metrics Lab", "Release Pipeline"],
+        },
+        {
+            "id": "software_builder",
+            "name": "Software Builder",
+            "input_modes": ["repo", "spec", "prompt", "file", "screenshot", "demo"],
+            "output_contracts": [
+                "spec",
+                "implementation_plan",
+                "write_plan",
+                "patch_preview",
+                "test_plan",
+                "ready_for_commit_packet",
+            ],
+            "safe_actions": ["scan", "plan", "dry_run", "checkpoint", "apply_guarded", "run_checks"],
+            "blocked_actions": ["commit_without_approval", "push_without_approval", "write_secrets"],
+            "experiments": ["profession-aware app builder", "input-mode router", "demo command"],
+            "blackmamba_university_modules": ["Repo Reading", "Safe Refactoring", "Testing Rituals"],
+        },
+        {
+            "id": "educator",
+            "name": "Educator",
+            "input_modes": ["prompt", "file", "profession", "course", "demo"],
+            "output_contracts": ["lesson_plan", "quiz", "rubric", "project_brief", "student_path"],
+            "safe_actions": ["explain", "scaffold", "quiz", "summarize", "generate_project"],
+            "blocked_actions": ["fabricate_source_claims", "grade_high_stakes_work_without_context"],
+            "experiments": ["request-to-course converter", "student project ladder", "skill tree builder"],
+            "blackmamba_university_modules": ["Learning by Building", "Creative Math Lab", "Portfolio Education"],
+        },
+        {
+            "id": "visual_artist",
+            "name": "Visual Artist",
+            "input_modes": ["image", "screenshot", "prompt", "creative", "file", "demo"],
+            "output_contracts": ["art_brief", "prompt_pack", "layout_spec", "brand_tokens", "asset_checklist"],
+            "safe_actions": ["describe", "brief", "template", "generate_variations", "export_specs"],
+            "blocked_actions": ["claim_identity_of_real_people", "overwrite_source_art_destructively"],
+            "experiments": ["cover art director", "brand palette generator", "music-to-visual mapper"],
+            "blackmamba_university_modules": ["Cover Design Lab", "Visual Identity", "Prompt Direction"],
+        },
+        {
+            "id": "scientist_lab",
+            "name": "Scientist / Lab",
+            "input_modes": ["prompt", "file", "data", "creative", "demo"],
+            "output_contracts": [
+                "model_explanation",
+                "simulation_plan",
+                "notebook_outline",
+                "experiment_protocol",
+                "learning_module",
+            ],
+            "safe_actions": ["explain", "simulate", "visualize", "template", "generate_demo"],
+            "blocked_actions": ["unsafe_lab_protocols", "medical_or_legal_claims_without_sources"],
+            "experiments": ["sinusoidal waveform lab", "physics-to-audio demo", "math-to-visual module"],
+            "blackmamba_university_modules": ["Creative Signals", "Waveforms and Sound", "Simulation Thinking"],
+        },
+    ],
+}
+
 _INPUT_MODE_KEYWORDS: dict[str, tuple[str, ...]] = {
     "audio": ("audio", "cancion", "canción", "mp3", "wav", "bpm", "voz", "sonido", "mezcla"),
     "image": ("imagen", "portada", "cover", "foto", "visual", "dibujo", "arte"),
@@ -173,9 +257,9 @@ def _normalize(text: str) -> str:
 def _load_registry(repo_root: str | Path = ".", template_path: str | Path | None = None) -> dict[str, Any]:
     root = Path(repo_root).expanduser().resolve()
     path = root / (template_path or _DEFAULT_TEMPLATE_PATH)
-    if not path.exists():
-        raise FileNotFoundError(f"profession template registry not found: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return _BUNDLED_REGISTRY
 
 
 def _score_professions(text: str) -> tuple[str, list[str], float]:
@@ -253,7 +337,7 @@ def route_profession(
     professions = {entry["id"]: entry for entry in registry.get("professions", [])}
     profession_entry = professions.get(profession_id)
     if profession_entry is None:
-        raise KeyError(f"profession not found in registry: {profession_id}")
+        profession_entry = {entry["id"]: entry for entry in _BUNDLED_REGISTRY["professions"]}[profession_id]
 
     input_mode = _detect_input_mode(text, profession_entry)
     output_contract = _choose_output_contract(text, profession_entry, input_mode)
