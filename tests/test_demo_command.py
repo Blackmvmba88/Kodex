@@ -39,7 +39,7 @@ def test_build_demo_packet_accepts_custom_request():
 
 def test_demo_packet_does_not_create_runtime_artifacts(tmp_path):
     repo = tmp_path
-+    (repo / "configs").mkdir()
+    (repo / "configs").mkdir()
     source = Path("configs/profession_templates.json")
     (repo / "configs" / "profession_templates.json").write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
 
