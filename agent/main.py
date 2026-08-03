@@ -18,6 +18,7 @@ from agent.diagnostics import diagnose_file, diagnose_text
 from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
 from agent.git_ops import git_status
+from agent.guide import build_guide
 from agent.memory import find_project, load_projects, save_project
 from agent.modes import build_modes_catalog
 from agent.orchestrator import orchestrate_task
@@ -249,6 +250,44 @@ def modes(json_output: bool = typer.Option(False, "--json", help="Render raw JSO
     console.print("[bold]Try next:[/bold]")
     for command in catalog["try_next"]:
         console.print(f"  [green]{command}[/green]")
+
+
+@app.command("guide")
+def guide(
+    request: str = typer.Argument(..., help="Human request to guide through Kodex"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON guide packet"),
+) -> None:
+    """Guide a human request into the safest next Kodex commands."""
+    packet = build_guide(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(packet))
+        return
+
+    route = packet["route"]
+    console.print(f"[bold green]KODEX GUIDE[/bold green] [dim]{packet['mutation_policy']}[/dim]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {packet['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {route['profession_name']} / {route['input_mode']} → {route['output_contract']}")
+    console.print(f"[bold cyan]Mode note:[/bold cyan] {packet['mode_note']}")
+
+    table = Table(title="Recommended Path")
+    table.add_column("Step", style="bold cyan")
+    table.add_column("Command", style="green")
+    table.add_column("Purpose")
+    table.add_column("Mutation", style="magenta")
+    for step in packet["recommended_steps"]:
+        table.add_row(step["title"], step["command"], step["purpose"], step["mutation"])
+    console.print(table)
+
+    if packet["blackmamba_university_modules"]:
+        console.print("[bold]BlackMamba University:[/bold]")
+        for module in packet["blackmamba_university_modules"]:
+            console.print(f"  [cyan]{module}[/cyan]")
+
+    if packet["safety_notes"]:
+        console.print("[bold yellow]Safety notes:[/bold yellow]")
+        for note in packet["safety_notes"]:
+            console.print(f"  [yellow]{note}[/yellow]")
 
 
 @app.command("profession")
