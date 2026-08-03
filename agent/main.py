@@ -19,6 +19,7 @@ from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
 from agent.git_ops import git_status
 from agent.guide import build_guide
+from agent.lab import build_lab_packet
 from agent.memory import find_project, load_projects, save_project
 from agent.modes import build_modes_catalog
 from agent.orchestrator import orchestrate_task
@@ -288,6 +289,46 @@ def guide(
         console.print("[bold yellow]Safety notes:[/bold yellow]")
         for note in packet["safety_notes"]:
             console.print(f"  [yellow]{note}[/yellow]")
+
+
+@app.command("lab")
+def lab(
+    request: str = typer.Argument(..., help="Human request to turn into a BlackMamba University lab"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON lab packet"),
+) -> None:
+    """Turn a request into a non-mutating BlackMamba University lab packet."""
+    packet = build_lab_packet(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(packet))
+        return
+
+    route = packet["route"]
+    console.print(f"[bold green]{packet['title']}[/bold green]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {packet['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {route['profession_name']} / {route['input_mode']} → {route['output_contract']}")
+    console.print(f"[bold cyan]Mutation policy:[/bold cyan] {packet['mutation_policy']}")
+
+    for section in packet["sections"]:
+        table = Table(title=section["title"])
+        table.add_column("Item", style="green")
+        for item in section["items"]:
+            table.add_row(item)
+        console.print(table)
+
+    if packet["blackmamba_university_modules"]:
+        console.print("[bold]BlackMamba University modules:[/bold]")
+        for module in packet["blackmamba_university_modules"]:
+            console.print(f"  [cyan]{module}[/cyan]")
+
+    if packet["safety_notes"]:
+        console.print("[bold yellow]Safety notes:[/bold yellow]")
+        for note in packet["safety_notes"]:
+            console.print(f"  [yellow]{note}[/yellow]")
+
+    console.print("[bold]Try next:[/bold]")
+    for command in packet["next_commands"]:
+        console.print(f"  [green]{command}[/green]")
 
 
 @app.command("profession")
