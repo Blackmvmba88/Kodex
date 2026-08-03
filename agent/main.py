@@ -19,6 +19,7 @@ from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
 from agent.git_ops import git_status
 from agent.memory import find_project, load_projects, save_project
+from agent.modes import build_modes_catalog
 from agent.orchestrator import orchestrate_task
 from agent.patcher import apply_patch, propose_patch
 from agent.pr_summary import build_pr_summary
@@ -219,6 +220,35 @@ def pr_summary(
 def release_check_command(path: str = typer.Option(".", "--path", "-p", help="Repository path")) -> None:
     """Evaluate whether the repository has release-ready infrastructure."""
     console.print(JSON.from_data(release_check(path)))
+
+
+@app.command("modes")
+def modes(json_output: bool = typer.Option(False, "--json", help="Render raw JSON capability catalog")) -> None:
+    """Show Kodex input modes, profession lanes, and BlackMamba University labs."""
+    catalog = build_modes_catalog()
+    if json_output:
+        console.print(JSON.from_data(catalog))
+        return
+
+    console.print(f"[bold green]{catalog['product']}[/bold green] [dim]{catalog['tagline']}[/dim]")
+
+    for title, key in (
+        ("Input Modes", "input_modes"),
+        ("Profession Lanes", "profession_lanes"),
+        ("BlackMamba University Labs", "blackmamba_university_labs"),
+    ):
+        table = Table(title=title)
+        table.add_column("Name", style="bold cyan")
+        table.add_column("Purpose")
+        table.add_column("Example", style="green")
+        table.add_column("Safe Boundary", style="magenta")
+        for item in catalog[key]:
+            table.add_row(item["name"], item["purpose"], item["example"], item["safe_boundary"])
+        console.print(table)
+
+    console.print("[bold]Try next:[/bold]")
+    for command in catalog["try_next"]:
+        console.print(f"  [green]{command}[/green]")
 
 
 @app.command("profession")
