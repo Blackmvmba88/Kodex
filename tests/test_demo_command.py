@@ -6,6 +6,7 @@ from typer.testing import CliRunner
 
 from agent.demo import available_demos, build_demo_packet
 from agent.main import app
+from agent.profession_router import route_profession_dict
 
 
 runner = CliRunner()
@@ -51,6 +52,26 @@ def test_demo_packet_does_not_create_runtime_artifacts(tmp_path):
     assert not (repo / ".pytest_cache").exists()
 
 
+def test_demo_uses_bundled_registry_when_run_outside_repo(tmp_path):
+    outside_repo = tmp_path / "some-target-project"
+    outside_repo.mkdir()
+
+    data = build_demo_packet("sine", repo_root=outside_repo)
+
+    assert data["route"]["profession"] == "scientist_lab"
+    assert data["mutation"] == "none"
+    assert not (outside_repo / ".kodex").exists()
+    assert not (outside_repo / "generated").exists()
+
+
+def test_profession_router_uses_bundled_registry_when_config_missing(tmp_path):
+    data = route_profession_dict("quiero una onda sinusoidal", tmp_path)
+
+    assert data["profession"] == "scientist_lab"
+    assert data["input_mode"] == "creative"
+    assert data["output_contract"] == "simulation_plan"
+
+
 def test_demo_cli_lists_available_demos():
     result = runner.invoke(app, ["demo", "--list"])
 
@@ -60,8 +81,19 @@ def test_demo_cli_lists_available_demos():
     assert '"biomed"' in result.output
 
 
-def test_demo_cli_outputs_default_demo():
+def test_demo_cli_outputs_human_default_demo():
     result = runner.invoke(app, ["demo"])
+
+    assert result.exit_code == 0
+    assert "KODEX" in result.output
+    assert "Intent Route" in result.output
+    assert "Scientist / Lab" in result.output
+    assert "Mutation" in result.output
+    assert "none" in result.output
+
+
+def test_demo_cli_json_outputs_default_demo_packet():
+    result = runner.invoke(app, ["demo", "--json"])
 
     assert result.exit_code == 0
     assert '"name": "sine"' in result.output
@@ -69,8 +101,16 @@ def test_demo_cli_outputs_default_demo():
     assert '"profession": "scientist_lab"' in result.output
 
 
-def test_demo_cli_accepts_custom_request():
+def test_demo_cli_accepts_custom_request_in_human_mode():
     result = runner.invoke(app, ["demo", "--request", "turn this README into an app with tests"])
+
+    assert result.exit_code == 0
+    assert "Software Builder" in result.output
+    assert "none" in result.output
+
+
+def test_demo_cli_accepts_custom_request_in_json_mode():
+    result = runner.invoke(app, ["demo", "--json", "--request", "turn this README into an app with tests"])
 
     assert result.exit_code == 0
     assert '"profession": "software_builder"' in result.output

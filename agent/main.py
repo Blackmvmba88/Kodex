@@ -6,7 +6,9 @@ from typing import Optional
 import typer
 from rich.console import Console
 from rich.json import JSON
+from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 from agent.app_builder import build_app
 from agent.autonomous import autonomous_run, resume_run
@@ -32,6 +34,46 @@ from agent.virtualizer import virtualize_task
 
 app = typer.Typer(help="Kodex — BlackMamba Dev Agent")
 console = Console()
+
+
+def _print_demo_human(packet: dict) -> None:
+    """Render a premium, non-JSON demo view for first-touch users."""
+    route = packet["route"]
+
+    title = Text("KODEX", style="bold green")
+    title.append("  BlackMamba local-first builder agent", style="dim")
+    console.print(
+        Panel(
+            title,
+            subtitle="no mutation · no provider calls · no repo writes",
+            border_style="green",
+        )
+    )
+
+    summary = Table(show_header=False, box=None, padding=(0, 2))
+    summary.add_column("Key", style="bold cyan")
+    summary.add_column("Value")
+    summary.add_row("Request", packet["request"])
+    summary.add_row("Profession", f"{route['profession_name']} ({route['profession']})")
+    summary.add_row("Input Mode", route["input_mode"])
+    summary.add_row("Output", route["output_contract"])
+    summary.add_row("Mutation", packet["mutation"])
+    summary.add_row("Confidence", str(route["confidence"]))
+    console.print(Panel(summary, title="Intent Route", border_style="cyan"))
+
+    flow = Table(title="Flow", show_header=True)
+    flow.add_column("Step", style="bold")
+    flow.add_column("Status", style="green")
+    flow.add_column("Meaning")
+    for item in packet["flow"]:
+        flow.add_row(item["step"], item["status"], item["meaning"])
+    console.print(flow)
+
+    commands = "\n".join(f"  {command}" for command in packet["commands"])
+    console.print(Panel(commands, title="Try Next", border_style="magenta"))
+
+    promise = " · ".join(packet["promise"])
+    console.print(Panel(promise, title="Product Promise", border_style="green"))
 
 
 @app.command()
@@ -234,14 +276,19 @@ def profession(
 def demo(
     name: str = typer.Option("sine", "--name", "-n", help="Bundled demo name"),
     request: Optional[str] = typer.Option(None, "--request", "-r", help="Optional custom request to route"),
-    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    path: str = typer.Option(".", "--path", "-p", help="Optional repository path containing profession templates"),
     list_demos: bool = typer.Option(False, "--list", help="List bundled demos and exit"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON instead of human demo view"),
 ) -> None:
-    """Show a non-mutating Kodex product demo packet."""
+    """Show a non-mutating Kodex product demo."""
     if list_demos:
         console.print(JSON.from_data({"demos": available_demos()}))
         return
-    console.print(JSON.from_data(build_demo_packet(name, repo_root=path, request=request)))
+    packet = build_demo_packet(name, repo_root=path, request=request)
+    if json_output:
+        console.print(JSON.from_data(packet))
+    else:
+        _print_demo_human(packet)
 
 
 @app.command("app-build")
