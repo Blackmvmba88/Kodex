@@ -13,16 +13,19 @@ from agent.autonomous import autonomous_run, resume_run
 from agent.brancher import prepare_branch
 from agent.checks import run_project_checks
 from agent.cleaner import clean_repo
+from agent.course import build_course_module
 from agent.demo import available_demos, build_demo_packet
 from agent.diagnostics import diagnose_file, diagnose_text
 from agent.diff_guard import inspect_diff
 from agent.executor import execute_task
 from agent.git_ops import git_status
 from agent.guide import build_guide
+from agent.lab import build_lab_packet
 from agent.memory import find_project, load_projects, save_project
 from agent.modes import build_modes_catalog
 from agent.orchestrator import orchestrate_task
 from agent.patcher import apply_patch, propose_patch
+from agent.portfolio import build_portfolio_packet
 from agent.pr_summary import build_pr_summary
 from agent.profession_router import route_profession_dict
 from agent.release_check import release_check
@@ -288,6 +291,136 @@ def guide(
         console.print("[bold yellow]Safety notes:[/bold yellow]")
         for note in packet["safety_notes"]:
             console.print(f"  [yellow]{note}[/yellow]")
+
+
+@app.command("lab")
+def lab(
+    request: str = typer.Argument(..., help="Human request to turn into a BlackMamba University lab"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON lab packet"),
+) -> None:
+    """Turn a request into a non-mutating BlackMamba University lab packet."""
+    packet = build_lab_packet(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(packet))
+        return
+
+    route = packet["route"]
+    console.print(f"[bold green]{packet['title']}[/bold green]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {packet['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {route['profession_name']} / {route['input_mode']} → {route['output_contract']}")
+    console.print(f"[bold cyan]Mutation policy:[/bold cyan] {packet['mutation_policy']}")
+
+    for section in packet["sections"]:
+        table = Table(title=section["title"])
+        table.add_column("Item", style="green")
+        for item in section["items"]:
+            table.add_row(item)
+        console.print(table)
+
+    if packet["blackmamba_university_modules"]:
+        console.print("[bold]BlackMamba University modules:[/bold]")
+        for module in packet["blackmamba_university_modules"]:
+            console.print(f"  [cyan]{module}[/cyan]")
+
+    if packet["safety_notes"]:
+        console.print("[bold yellow]Safety notes:[/bold yellow]")
+        for note in packet["safety_notes"]:
+            console.print(f"  [yellow]{note}[/yellow]")
+
+    console.print("[bold]Try next:[/bold]")
+    for command in packet["next_commands"]:
+        console.print(f"  [green]{command}[/green]")
+
+
+@app.command("course")
+def course(
+    request: str = typer.Argument(..., help="Human request to turn into a BlackMamba University course"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON course module"),
+) -> None:
+    """Turn a request into a non-mutating BlackMamba University course module."""
+    module = build_course_module(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(module))
+        return
+
+    console.print(f"[bold green]{module['title']}[/bold green]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {module['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {module['lane']} / {module['input_mode']} → {module['output_contract']}")
+    console.print(f"[bold cyan]Goal:[/bold cyan] {module['course_goal']}")
+    console.print(f"[bold cyan]Mutation:[/bold cyan] {module['mutation']}")
+
+    lessons = Table(title="Lessons")
+    lessons.add_column("Lesson", style="bold cyan")
+    lessons.add_column("Focus")
+    lessons.add_column("Exercise", style="green")
+    lessons.add_column("Artifact", style="magenta")
+    for lesson in module["lessons"]:
+        lessons.add_row(lesson["title"], lesson["focus"], lesson["exercise"], lesson["artifact"])
+    console.print(lessons)
+
+    console.print(f"[bold]Capstone:[/bold] {module['capstone_project']}")
+    console.print(f"[bold]Portfolio artifact:[/bold] {module['portfolio_artifact']}")
+
+    assessment = Table(title="Assessment")
+    assessment.add_column("Criterion", style="green")
+    for item in module["assessment"]:
+        assessment.add_row(item)
+    console.print(assessment)
+
+    if module["safety_boundary"]:
+        console.print("[bold yellow]Safety boundary:[/bold yellow]")
+        for note in module["safety_boundary"]:
+            console.print(f"  [yellow]{note}[/yellow]")
+
+    console.print("[bold]Try next:[/bold]")
+    for command in module["next_commands"]:
+        console.print(f"  [green]{command}[/green]")
+
+
+@app.command("portfolio")
+def portfolio(
+    request: str = typer.Argument(..., help="Human request to turn into a portfolio evidence packet"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON portfolio packet"),
+) -> None:
+    """Turn a request into a non-mutating BlackMamba University portfolio packet."""
+    packet = build_portfolio_packet(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(packet))
+        return
+
+    console.print(f"[bold green]{packet['title']}[/bold green]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {packet['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {packet['lane']} / {packet['input_mode']} → {packet['output_contract']}")
+    console.print(f"[bold cyan]Artifact:[/bold cyan] {packet['artifact_name']}")
+    console.print(f"[bold cyan]Pitch:[/bold cyan] {packet['elevator_pitch']}")
+    console.print(f"[bold cyan]Mutation:[/bold cyan] {packet['mutation']}")
+
+    for title, key in (
+        ("README Outline", "readme_outline"),
+        ("Demo Script", "demo_script"),
+        ("Evidence Checklist", "evidence_checklist"),
+        ("Publish Boundary", "publish_boundary"),
+        ("Safety Boundary", "safety_boundary"),
+    ):
+        table = Table(title=title)
+        table.add_column("Item", style="green")
+        for item in packet[key]:
+            table.add_row(item)
+        console.print(table)
+
+    for section in packet["sections"]:
+        table = Table(title=section["title"])
+        table.add_column("Item", style="cyan")
+        for item in section["items"]:
+            table.add_row(item)
+        console.print(table)
+
+    console.print("[bold]Try next:[/bold]")
+    for command in packet["next_commands"]:
+        console.print(f"  [green]{command}[/green]")
 
 
 @app.command("profession")
