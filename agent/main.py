@@ -13,6 +13,7 @@ from agent.autonomous import autonomous_run, resume_run
 from agent.brancher import prepare_branch
 from agent.checks import run_project_checks
 from agent.cleaner import clean_repo
+from agent.course import build_course_module
 from agent.demo import available_demos, build_demo_packet
 from agent.diagnostics import diagnose_file, diagnose_text
 from agent.diff_guard import inspect_diff
@@ -328,6 +329,52 @@ def lab(
 
     console.print("[bold]Try next:[/bold]")
     for command in packet["next_commands"]:
+        console.print(f"  [green]{command}[/green]")
+
+
+@app.command("course")
+def course(
+    request: str = typer.Argument(..., help="Human request to turn into a BlackMamba University course"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON course module"),
+) -> None:
+    """Turn a request into a non-mutating BlackMamba University course module."""
+    module = build_course_module(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(module))
+        return
+
+    console.print(f"[bold green]{module['title']}[/bold green]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {module['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {module['lane']} / {module['input_mode']} → {module['output_contract']}")
+    console.print(f"[bold cyan]Goal:[/bold cyan] {module['course_goal']}")
+    console.print(f"[bold cyan]Mutation:[/bold cyan] {module['mutation']}")
+
+    lessons = Table(title="Lessons")
+    lessons.add_column("Lesson", style="bold cyan")
+    lessons.add_column("Focus")
+    lessons.add_column("Exercise", style="green")
+    lessons.add_column("Artifact", style="magenta")
+    for lesson in module["lessons"]:
+        lessons.add_row(lesson["title"], lesson["focus"], lesson["exercise"], lesson["artifact"])
+    console.print(lessons)
+
+    console.print(f"[bold]Capstone:[/bold] {module['capstone_project']}")
+    console.print(f"[bold]Portfolio artifact:[/bold] {module['portfolio_artifact']}")
+
+    assessment = Table(title="Assessment")
+    assessment.add_column("Criterion", style="green")
+    for item in module["assessment"]:
+        assessment.add_row(item)
+    console.print(assessment)
+
+    if module["safety_boundary"]:
+        console.print("[bold yellow]Safety boundary:[/bold yellow]")
+        for note in module["safety_boundary"]:
+            console.print(f"  [yellow]{note}[/yellow]")
+
+    console.print("[bold]Try next:[/bold]")
+    for command in module["next_commands"]:
         console.print(f"  [green]{command}[/green]")
 
 
