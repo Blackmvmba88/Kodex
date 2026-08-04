@@ -36,6 +36,8 @@ class ShowcaseKit:
     title: str
     request: str
     lane: str
+    input_mode: str
+    output_contract: str
     artifact_name: str
     public_summary: str
     private_review_notes: list[str]
@@ -43,6 +45,7 @@ class ShowcaseKit:
     audience_variants: list[AudienceVariant]
     publish_safety_gate: list[str]
     proof_checklist: list[str]
+    safety_boundary: list[str]
     next_commands: list[str]
 
     def to_dict(self) -> dict[str, Any]:
@@ -50,6 +53,8 @@ class ShowcaseKit:
             "title": self.title,
             "request": self.request,
             "lane": self.lane,
+            "input_mode": self.input_mode,
+            "output_contract": self.output_contract,
             "artifact_name": self.artifact_name,
             "public_summary": self.public_summary,
             "private_review_notes": self.private_review_notes,
@@ -57,6 +62,7 @@ class ShowcaseKit:
             "audience_variants": [variant.to_dict() for variant in self.audience_variants],
             "publish_safety_gate": self.publish_safety_gate,
             "proof_checklist": self.proof_checklist,
+            "safety_boundary": self.safety_boundary,
             "next_commands": self.next_commands,
             "mutation": "none",
         }
@@ -185,6 +191,8 @@ def build_showcase_kit(request: str, repo_root: str = ".") -> dict[str, Any]:
         title="BlackMamba Showcase Kit",
         request=request,
         lane=portfolio["lane"],
+        input_mode=portfolio["input_mode"],
+        output_contract=portfolio["output_contract"],
         artifact_name=portfolio["artifact_name"],
         public_summary=_public_summary(portfolio),
         private_review_notes=_private_review_notes(portfolio),
@@ -195,6 +203,10 @@ def build_showcase_kit(request: str, repo_root: str = ".") -> dict[str, Any]:
             "Showcase script reviewed.",
             "Audience variant selected.",
             "Publish safety gate completed.",
+        ],
+        safety_boundary=list(portfolio.get("safety_boundary", [])) + [
+            "Showcase planning only.",
+            "No publishing, uploads, repository writes, checks, commits, pushes, PRs, or external actions.",
         ],
         next_commands=[
             f"kodex guide {request!r}",
