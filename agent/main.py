@@ -25,6 +25,7 @@ from agent.memory import find_project, load_projects, save_project
 from agent.modes import build_modes_catalog
 from agent.orchestrator import orchestrate_task
 from agent.patcher import apply_patch, propose_patch
+from agent.portfolio import build_portfolio_packet
 from agent.pr_summary import build_pr_summary
 from agent.profession_router import route_profession_dict
 from agent.release_check import release_check
@@ -375,6 +376,50 @@ def course(
 
     console.print("[bold]Try next:[/bold]")
     for command in module["next_commands"]:
+        console.print(f"  [green]{command}[/green]")
+
+
+@app.command("portfolio")
+def portfolio(
+    request: str = typer.Argument(..., help="Human request to turn into a portfolio evidence packet"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON portfolio packet"),
+) -> None:
+    """Turn a request into a non-mutating BlackMamba University portfolio packet."""
+    packet = build_portfolio_packet(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(packet))
+        return
+
+    console.print(f"[bold green]{packet['title']}[/bold green]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {packet['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {packet['lane']} / {packet['input_mode']} → {packet['output_contract']}")
+    console.print(f"[bold cyan]Artifact:[/bold cyan] {packet['artifact_name']}")
+    console.print(f"[bold cyan]Pitch:[/bold cyan] {packet['elevator_pitch']}")
+    console.print(f"[bold cyan]Mutation:[/bold cyan] {packet['mutation']}")
+
+    for title, key in (
+        ("README Outline", "readme_outline"),
+        ("Demo Script", "demo_script"),
+        ("Evidence Checklist", "evidence_checklist"),
+        ("Publish Boundary", "publish_boundary"),
+        ("Safety Boundary", "safety_boundary"),
+    ):
+        table = Table(title=title)
+        table.add_column("Item", style="green")
+        for item in packet[key]:
+            table.add_row(item)
+        console.print(table)
+
+    for section in packet["sections"]:
+        table = Table(title=section["title"])
+        table.add_column("Item", style="cyan")
+        for item in section["items"]:
+            table.add_row(item)
+        console.print(table)
+
+    console.print("[bold]Try next:[/bold]")
+    for command in packet["next_commands"]:
         console.print(f"  [green]{command}[/green]")
 
 
