@@ -124,6 +124,27 @@ Always mutate.
 Always elevate.
 ```
 
+## Command loop
+
+Kodex now has a full non-mutating product loop from first-touch demo to final review gate:
+
+```text
+kodex demo
+  → kodex modes
+  → kodex guide
+  → kodex lab
+  → kodex course
+  → kodex portfolio
+  → kodex showcase
+  → kodex review-gate
+```
+
+Read the full guide in:
+
+```text
+docs/COMMAND_LOOP.md
+```
+
 ## Quickstart
 
 Install in editable mode:
@@ -305,6 +326,7 @@ For the product path, read:
 
 ```text
 docs/QUICKSTART.md
+docs/COMMAND_LOOP.md
 docs/WHY_KODEX.md
 docs/INPUT_MODES.md
 docs/SIGNATURE_REQUESTS.md
