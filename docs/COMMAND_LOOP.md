@@ -1,6 +1,6 @@
 # Kodex command loop
 
-Kodex now has a full non-mutating product loop that turns a human request into a routed intent, a learning packet, a portfolio artifact, a showcase kit, and a review gate.
+Kodex now has a full non-mutating product loop that turns a human request into a routed intent, a guide packet, a lab packet, a course module, a portfolio artifact, a showcase kit, and a review gate.
 
 This document explains the command order, what each command produces, and what it never does by default.
 
