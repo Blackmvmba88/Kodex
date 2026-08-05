@@ -32,7 +32,9 @@ from agent.pr_summary import build_pr_summary
 from agent.profession_router import route_profession_dict
 from agent.release_check import release_check
 from agent.repo_scanner import scan_repo
+from agent.review_gate import build_review_gate
 from agent.shipper import ship_task
+from agent.showcase import build_showcase_kit
 from agent.snapshot import build_snapshot
 from agent.task_planner import build_plan
 from agent.virtualizer import virtualize_task
@@ -463,6 +465,92 @@ def portfolio(
     console.print("[bold]Try next:[/bold]")
     for command in packet["next_commands"]:
         console.print(f"  [green]{command}[/green]")
+
+
+@app.command("showcase")
+def showcase(
+    request: str = typer.Argument(..., help="Human request to turn into a safe showcase kit"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON showcase kit"),
+) -> None:
+    """Turn a request into a non-mutating BlackMamba showcase kit."""
+    kit = build_showcase_kit(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(kit))
+        return
+
+    console.print(f"[bold green]{kit['title']}[/bold green]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {kit['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {kit['lane']} / {kit['input_mode']} → {kit['output_contract']}")
+    console.print(f"[bold cyan]Artifact:[/bold cyan] {kit['artifact_name']}")
+    console.print(f"[bold cyan]Summary:[/bold cyan] {kit['public_summary']}")
+    console.print(f"[bold cyan]Mutation:[/bold cyan] {kit['mutation']}")
+
+    for title, key in (
+        ("Private Review Notes", "private_review_notes"),
+        ("Demo Talking Points", "demo_talking_points"),
+        ("Proof Checklist", "proof_checklist"),
+        ("Publish Safety Gate", "publish_safety_gate"),
+        ("Safety Boundary", "safety_boundary"),
+    ):
+        table = Table(title=title)
+        table.add_column("Item", style="green")
+        for item in kit[key]:
+            table.add_row(item)
+        console.print(table)
+
+    variants = Table(title="Audience Variants")
+    variants.add_column("Audience", style="bold cyan")
+    variants.add_column("Angle")
+    variants.add_column("Opening", style="green")
+    for variant in kit["audience_variants"]:
+        variants.add_row(variant["audience"], variant["angle"], variant["opening_line"])
+    console.print(variants)
+
+    console.print("[bold]Try next:[/bold]")
+    for command in kit["next_commands"]:
+        console.print(f"  [green]{command}[/green]")
+
+
+@app.command("review-gate")
+def review_gate(
+    request: str = typer.Argument(..., help="Human request to evaluate through the showcase review gate"),
+    path: str = typer.Option(".", "--path", "-p", help="Repository path containing profession templates"),
+    json_output: bool = typer.Option(False, "--json", help="Render raw JSON review gate packet"),
+) -> None:
+    """Evaluate whether a showcase packet is ready to demo or needs more evidence."""
+    gate = build_review_gate(request, repo_root=path)
+    if json_output:
+        console.print(JSON.from_data(gate))
+        return
+
+    console.print(f"[bold green]{gate['title']}[/bold green]")
+    console.print(f"[bold cyan]Request:[/bold cyan] {gate['request']}")
+    console.print(f"[bold cyan]Lane:[/bold cyan] {gate['lane']}")
+    console.print(f"[bold cyan]Readiness:[/bold cyan] {gate['readiness_score']}")
+    console.print(f"[bold cyan]Decision:[/bold cyan] {gate['decision']}")
+    console.print(f"[bold cyan]Mutation:[/bold cyan] {gate['mutation']}")
+
+    checks = Table(title="Review Checks")
+    checks.add_column("Check", style="bold cyan")
+    checks.add_column("Status", style="green")
+    checks.add_column("Weight", style="magenta")
+    checks.add_column("Reason")
+    for check in gate["checks"]:
+        checks.add_row(check["name"], check["status"], str(check["weight"]), check["reason"])
+    console.print(checks)
+
+    for title, key in (
+        ("Missing Evidence", "missing_evidence"),
+        ("Risk Flags", "risk_flags"),
+        ("Recommended Actions", "recommended_actions"),
+        ("Safety Boundary", "safety_boundary"),
+    ):
+        table = Table(title=title)
+        table.add_column("Item", style="yellow" if key == "risk_flags" else "green")
+        for item in gate[key]:
+            table.add_row(item)
+        console.print(table)
 
 
 @app.command("profession")
