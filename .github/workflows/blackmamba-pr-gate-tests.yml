@@ -1,0 +1,35 @@
+name: BlackMamba PR Gate Tests
+
+on:
+  pull_request:
+    paths:
+      - ".github/blackmamba/pr-gate.json"
+      - ".github/workflows/blackmamba-pr-gate.yml"
+      - ".github/workflows/blackmamba-pr-gate-tests.yml"
+      - "scripts/blackmamba_pr_gate.py"
+      - "tests/test_blackmamba_pr_gate.py"
+      - "docs/BLACKMAMBA_PR_GATE.md"
+
+permissions:
+  contents: read
+
+jobs:
+  test-gate:
+    name: BlackMamba PR Gate Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Run focused gate tests
+        run: python -m pytest -q tests/test_blackmamba_pr_gate.py
