@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
 
 
@@ -8,6 +9,7 @@ MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "blackmamba_pr_g
 SPEC = importlib.util.spec_from_file_location("blackmamba_pr_gate", MODULE_PATH)
 assert SPEC and SPEC.loader
 pr_gate = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = pr_gate
 SPEC.loader.exec_module(pr_gate)
 
 
