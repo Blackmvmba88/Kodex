@@ -1,0 +1,79 @@
+name: BlackMamba PR Gate
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
+      - ready_for_review
+      - converted_to_draft
+      - labeled
+      - unlabeled
+  pull_request_review:
+    types:
+      - submitted
+      - edited
+      - dismissed
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Optional PR number. Leave empty to reconcile all open PRs."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: read
+  statuses: read
+
+concurrency:
+  group: blackmamba-pr-gate-${{ github.event.pull_request.number || github.event.review.id || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: BlackMamba PR Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # Security boundary: pull_request_target has write-capable token permissions,
+      # so ALWAYS checkout the trusted base branch, never PR head code.
+      - name: Checkout trusted base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref || github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run BlackMamba gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_PR: ${{ inputs.pr_number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "schedule" ]]; then
+            python scripts/blackmamba_pr_gate.py --all-open
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ -n "${MANUAL_PR:-}" ]]; then
+              python scripts/blackmamba_pr_gate.py --pr "$MANUAL_PR"
+            else
+              python scripts/blackmamba_pr_gate.py --all-open
+            fi
+          else
+            python scripts/blackmamba_pr_gate.py
+          fi
