@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "mode": "advisory",
+  "auto_merge": false,
+  "duplicate_detection": {
+    "enabled": true,
+    "file_overlap_threshold": 0.75,
+    "title_similarity_threshold": 0.25,
+    "max_open_prs_to_compare": 40
+  },
+  "safe_ready": {
+    "docs_only_can_be_ready_without_ci": true,
+    "require_resolved_review_threads": true
+  },
+  "labels": {
+    "prefix": "bm:"
+  }
+}
