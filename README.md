@@ -139,11 +139,7 @@ kodex demo
   → kodex review-gate
 ```
 
-Read the full guide in:
-
-```text
-docs/COMMAND_LOOP.md
-```
+Read the full guide in [docs/COMMAND_LOOP.md](docs/COMMAND_LOOP.md).
 
 ## Quickstart
 
