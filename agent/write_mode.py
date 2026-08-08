@@ -62,16 +62,74 @@ def _worktree_is_clean(repo_root: Path) -> bool:
     return result.returncode == 0 and result.stdout.strip() == ""
 
 
-def _run_checks(repo_root: Path) -> tuple[bool, str]:
-    """Run the project's fast check suite (pytest -x -q). Returns (ok, output)."""
-    result = subprocess.run(
-        ["python", "-m", "pytest", "-x", "-q", "--tb=short"],
-        cwd=repo_root,
-        capture_output=True,
-        text=True,
-    )
-    output = (result.stdout + result.stderr).strip()
-    return result.returncode == 0, output
+def _run_checks(repo_root: Path, policy: WritePolicy | None = None) -> tuple[bool, str, list[dict[str, Any]]]:
+    """Run configured check commands and return (ok, combined_output, details)."""
+    loaded_policy = policy or WritePolicy()
+    commands = loaded_policy.checks.normalized_commands()
+    if not commands:
+        return True, "", []
+
+    details: list[dict[str, Any]] = []
+    outputs: list[str] = []
+
+    for command in commands:
+        try:
+            result = subprocess.run(
+                shlex.split(command),
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                timeout=loaded_policy.checks.timeout_seconds,
+            )
+            output = (result.stdout + result.stderr).strip()
+            detail = {
+                "command": command,
+                "ok": result.returncode == 0,
+                "returncode": result.returncode,
+                "output": output,
+            }
+        except subprocess.TimeoutExpired as exc:
+            stdout = exc.stdout or ""
+            stderr = exc.stderr or ""
+            if isinstance(stdout, bytes):
+                stdout = stdout.decode(errors="replace")
+            if isinstance(stderr, bytes):
+                stderr = stderr.decode(errors="replace")
+            output = (stdout + stderr).strip()
+            detail = {
+                "command": command,
+                "ok": False,
+                "returncode": None,
+                "output": output,
+                "timeout": loaded_policy.checks.timeout_seconds,
+            }
+
+        details.append(detail)
+        if detail["output"]:
+            outputs.append(detail["output"])
+        if not detail["ok"] and loaded_policy.checks.stop_on_failure:
+            break
+
+    ok = all(detail["ok"] for detail in details)
+    return ok, "\n".join(outputs).strip(), details
+
+
+def _coerce_check_result(value: tuple[Any, ...]) -> tuple[bool, str, list[dict[str, Any]]]:
+    """Accept old two-value check mocks while keeping the richer contract."""
+    if len(value) == 3:
+        ok, output, details = value
+        return bool(ok), str(output), list(details)
+    if len(value) == 2:
+        ok, output = value
+        return bool(ok), str(output), [
+            {
+                "command": "legacy check",
+                "ok": bool(ok),
+                "returncode": 0 if ok else 1,
+                "output": str(output),
+            }
+        ]
+    raise ValueError("check result must contain 2 or 3 values")
 
 
 def _safe_diff(repo_root: Path) -> str:
@@ -211,7 +269,7 @@ def run_write_mode(
         result["checks_ok"] = None
         result["diff_safe"] = None
         result["next_commands"] = [
-            f"kodex app-build {task!r} --apply",
+            f"kodex app-build {task!r} --path {str(root)!r} --apply",
         ]
         return result
 
@@ -243,7 +301,7 @@ def run_write_mode(
     # ------------------------------------------------------------------
     # 10. Run checks
     # ------------------------------------------------------------------
-    checks_ok, check_output, check_details = _run_checks(root, loaded_policy)
+    checks_ok, check_output, check_details = _coerce_check_result(_run_checks(root, loaded_policy))
     result["checks_ok"] = checks_ok
     result["checks"] = check_details
 
@@ -268,7 +326,7 @@ def run_write_mode(
         if repair.ok:
             repair_patch = apply_generated_files(root, repair.final_files, policy=loaded_policy, dry_run=False)
             result["written"].extend(repair_patch.written)
-            checks_ok, check_output, check_details = _run_checks(root, loaded_policy)
+            checks_ok, check_output, check_details = _coerce_check_result(_run_checks(root, loaded_policy))
             result["checks_ok"] = checks_ok
             result["checks"] = check_details
 
