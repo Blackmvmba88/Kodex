@@ -157,6 +157,7 @@ def build_modes_catalog() -> dict[str, Any]:
         "try_next": [
             "kodex demo",
             "kodex profession 'quiero una onda sinusoidal'",
+            "kodex lab 'Waveforms and Sound'",
             "kodex app-build 'Implement MVP' --dry-run",
         ],
     }
