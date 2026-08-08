@@ -70,11 +70,14 @@ class ShowcaseKit:
 
 def _public_summary(portfolio: dict[str, Any]) -> str:
     lane = portfolio["lane"].replace("_", " ")
-    return (
+    summary = (
         f"A BlackMamba workflow showcase for a {lane} request: human intent is routed, "
         "turned into a safe lab, expanded into a course, packaged as portfolio evidence, "
         "and presented with explicit safety and publishing boundaries."
     )
+    if portfolio["lane"] == "scientist_lab":
+        summary += " The showcase frames science work as simulation-first and keeps claims bounded."
+    return summary
 
 
 def _private_review_notes(portfolio: dict[str, Any]) -> list[str]:

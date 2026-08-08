@@ -198,6 +198,8 @@ def _detect_input_mode(text: str, profession_entry: dict[str, Any]) -> str:
 
 def _choose_output_contract(text: str, profession_entry: dict[str, Any], input_mode: str) -> str:
     contracts = profession_entry.get("output_contracts", []) or ["plan"]
+    if "implementation_plan" in contracts and any(word in text for word in ("app", "tests", "test", "implement", "mvp", "build", "programa")):
+        return "implementation_plan"
     if any(word in text for word in ("simula", "simular", "simulacion", "simulación", "onda", "frecuencia")):
         for preferred in ("simulation_plan", "model_explanation", "experiment_protocol"):
             if preferred in contracts:
@@ -224,7 +226,7 @@ def _safety_notes(text: str, profession: str) -> list[str]:
     if any(keyword in text for keyword in _HIGH_STAKES_KEYWORDS):
         notes.extend([
             "Biomedical or medical language detected: keep this educational/simulation-only.",
-            "Do not diagnose, prescribe, claim cures, or replace clinical judgment.",
+            "No diagnosis, prescription, treatment, cure, or replacement of clinical judgment.",
             "Prefer visual models, variables, measurements, and explicit limits.",
         ])
     return notes

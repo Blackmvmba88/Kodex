@@ -132,10 +132,10 @@ def _score(checks: list[GateCheck]) -> int:
 
 
 def _decision(score: int, risks: list[str], missing: list[str]) -> str:
-    if any("raw private" in risk.lower() for risk in risks):
-        return "hold_private_review"
     if any("medical" in risk.lower() or "biomedical" in risk.lower() for risk in risks):
         return "hold_until_safety_review"
+    if any("raw private" in risk.lower() for risk in risks):
+        return "hold_private_review"
     if score >= 90 and not missing:
         return "ready_for_private_demo"
     if score >= 75:
